@@ -86,6 +86,7 @@ logger = logging.getLogger('pipeline')
 # ══════════════════════════════════════════════════════════════════════════
 
 def embed_texts(texts: list, is_query: bool = False) -> list:
+    logger.info("Starting embed_texts")
     if not texts:
         return []
     payload = {
@@ -126,6 +127,7 @@ def resolve_pdf_path(storage_id: str, pdf_paths: list[str]) -> str | None:
 # ══════════════════════════════════════════════════════════════════════════
 
 def process_case(json_path: str, pdf_paths: list[str]) -> dict:
+    logger.info(f"Starting process_case for {json_path}")
     result = {
         'cnr': None, 'hearings': 0, 'documents': 0,
         'pdfs_extracted': 0, 'ocr_count': 0,
@@ -135,11 +137,13 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
     }
 
     # ── PHASE 1: JSON load + validation ────────────────────────────────
+    logger.info(f"Starting PHASE 1: JSON load for {json_path}")
     outer, raw = load_json(json_path)
     case       = build_case_model(outer, raw)
     result['cnr'] = case.cnr_number
 
     # ── PHASE 2: PDF extraction ─────────────────────────────────────────
+    logger.info(f"Starting PHASE 2: PDF extraction for {result['cnr']}")
     pdf_texts   : dict = {}
     pdf_fields  : dict = {}
     pdf_methods : dict = {}
@@ -161,6 +165,7 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
             result['pdfs_extracted'] += 1
 
     # ── PHASE 3: LLM extraction ─────────────────────────────────────────
+    logger.info(f"Starting PHASE 3: LLM extraction for {result['cnr']}")
     llm_result        = run_llm_extraction(pdf_texts, case)
     summary           = llm_result.get('search_summary') or ''
     judge_data        = llm_result.get('judge') or {}
@@ -180,6 +185,7 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
     deduped_assets = dedup_assets(raw_assets)
 
     # ── PHASE 4: Neo4j graph inserts ────────────────────────────────────
+    logger.info(f"Starting PHASE 4: Neo4j graph inserts for {result['cnr']}")
     with neo4j_driver.session() as session:
 
         def _write(tx):
@@ -323,6 +329,7 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
         case_id, doc_id_map = session.execute_write(_write)
 
     # ── PHASE 5: Backfill Document nodes with extracted PDF text ────────
+    logger.info(f"Starting PHASE 5: Backfilling Document nodes for {result['cnr']}")
     with neo4j_driver.session() as session:
         def _update_docs(tx):
             for doc in case.documents:
@@ -338,6 +345,7 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
         session.execute_write(_update_docs)
 
     # ── PHASE 6: Embed summary → store on Case node ─────────────────────
+    logger.info(f"Starting PHASE 6: Embedding summary for {result['cnr']}")
     if summary:
         try:
             vec = embed_texts_retry([summary])[0]

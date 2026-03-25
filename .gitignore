@@ -1,0 +1,4 @@
+.venv/
+.env
+manifest.csv
+pipeline.log

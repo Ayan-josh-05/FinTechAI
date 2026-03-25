@@ -15,7 +15,6 @@ import spacy
 import numpy as np
 import cv2
 from googletrans import Translator
-from text_processing import preprocess_text
 # from utils.language_translation import translate_to_english
 logger = logging.getLogger('pipeline')
 
@@ -61,6 +60,7 @@ def _extract_digital(pdf_path: str) -> tuple[str, bool]:
     Try digital text extraction with pdfplumber.
     Returns (text, quality_ok).  quality_ok=False → caller should try OCR.
     """
+    logger.info(f"Starting _extract_digital for {Path(pdf_path).name}")
     try:
         pages = []
         with pdfplumber.open(pdf_path) as pdf:
@@ -78,11 +78,11 @@ def _extract_digital(pdf_path: str) -> tuple[str, bool]:
     garbage = sum(1 for c in full_text if c in GARBAGE_CHARS)
     if garbage / max(len(full_text), 1) > 0.10:
         return full_text, False
-    print("DIGITAL TEXT",full_text)
-    # if is_misencoded_devanagari(full_text):
-    #     logger.info(f'Misencoded Devanagari in {Path(pdf_path).name} — falling back to OCR')
+    # print("DIGITAL TEXT",full_text)
+    if is_misencoded_devanagari(full_text):
+        logger.info(f'Misencoded Devanagari in {Path(pdf_path).name} — falling back to OCR')
 
-    #     return full_text, False
+        return full_text, False
 
     return full_text, True
 
@@ -92,7 +92,7 @@ def _extract_ocr(pdf_path: str) -> str:
     Strong OCR for Indian court PDFs
     Handles Hindi + English + bad scans
     """
-
+    logger.info(f"Starting _extract_ocr for {Path(pdf_path).name}")
     try:
         from pdf2image import convert_from_path
         import pytesseract
@@ -157,28 +157,6 @@ def _extract_ocr(pdf_path: str) -> str:
             f"OCR failed on {Path(pdf_path).name}: {e}"
         )
         return ""
-# def _extract_ocr(pdf_path: str) -> str:
-#     """
-#     OCR fallback using pdf2image + pytesseract (eng+hin language pack).
-#     Returns proper Unicode — Hindi in Devanagari, English in Latin.
-#     """
-#     try:
-#         from pdf2image import convert_from_path
-#         import pytesseract
-#     except ImportError as e:
-#         logger.error(f'OCR dependencies missing: {e}')
-#         return ''
-
-#     try:
-#         images = convert_from_path(pdf_path, dpi=300)
-#         pages  = []
-#         for img in images:
-#             text = pytesseract.image_to_string(img, lang='eng+hin')
-#             pages.append(text)
-#         return '\n'.join(pages).strip()
-#     except Exception as e:
-#         logger.warning(f'OCR failed on {Path(pdf_path).name}: {e}')
-#         return ''
 
 
 # ── Public API ─────────────────────────────────────────────────────────────
@@ -188,19 +166,15 @@ def extract_pdf_text(pdf_path: str) -> tuple[str, str]:
     Extract text from a PDF using digital extraction first, OCR as fallback.
     Returns (text, method) where method is 'digital' or 'ocr'.
     """
+    logger.info(f"Starting extract_pdf_text for {Path(pdf_path).name}")
     text, ok = _extract_digital(pdf_path)
     if ok:
         return text, 'digital'
     ocr_text = _extract_ocr(pdf_path)
-    print(ocr_text)
-    data = preprocess_text(text)
-    clean = data["normalized"]
-    print(clean)
+ 
     # print("OCR TEXT",ocr_text)
     if ocr_text:
-        print("calling")
-        ocr_text=translate_to_english(ocr_text)
-        print("called")
+       
         return ocr_text, 'ocr'
     # fallback: return whatever digital gave us even if low quality
     
@@ -222,46 +196,3 @@ def extract_fixed_fields(text: str) -> dict:
     }
 
 
-
-API_URL = "https://zaban.joshsoftware.com/api/v1/translate"
-
-API_KEY = "sk-xWeJidb1qWUkQNT0DVc0-K9pFB9vVTcNv0G6xXGz2swee_wkIEu_KNdT35thGZPo"
-
-def translate_to_english(text: str) -> str:
-    """
-    Calls external IndicTrans2 API
-    Auto detect source language
-    Target = English
-    """
-
-    if not text:
-        return ""
-
-    headers = {
-        "Content-Type": "application/json",
-        "X-API-Key": API_KEY
-    }
-
-    payload = {
-        "text": text,
-        "target_lang": "eng_Latn",
-        "auto_detect": True
-    }
-    print("inside translation")
-    try:
-        response = requests.post(
-            API_URL,
-            headers=headers,
-            json=payload,
-            timeout=300
-        )
-
-        response.raise_for_status()
-
-        data = response.json()
-        print("Translated Text",data.get("translated_text", ""))
-        return data.get("translated_text", "")
-
-    except Exception as e:
-        print("Translation API error:", e) 
-        return text
