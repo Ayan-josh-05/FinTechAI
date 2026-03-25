@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ── Paths ──────────────────────────────────────────────────────────────────
-DATASET_ROOT  = Path(r'/home/ankita/Documents/LegalAI/Extraction/data')
+DATASET_ROOT  = Path(r'/home/ue/LegalAI/Extraction/data')
 MANIFEST_PATH = Path('./manifest.csv')
 LOG_PATH      = Path('./pipeline.log')
 

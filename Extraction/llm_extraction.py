@@ -264,6 +264,7 @@ def build_llm_context(pdf_texts: dict, case) -> tuple[str, str]:
     Build (filled_system_prompt, user_content).
     user_content = structured case data + PDF text combined.
     """
+    logger.info(f"Starting build_llm_context for {case.cnr_number}")
     json_advocates = [
         p.name for p in case.persons
         if p.role in ('petitioner_advocate', 'respondent_advocate')
@@ -371,7 +372,7 @@ def build_llm_context(pdf_texts: dict, case) -> tuple[str, str]:
             continue
         fname = Path(storage_id).name
         lines.append(f'--- {fname} ---')
-        lines.append(text[:4000])
+        lines.append(text)
         lines.append('')
 
     return filled_prompt, '\n'.join(lines)
@@ -388,6 +389,7 @@ def run_llm_extraction(pdf_texts: dict, case) -> dict:
     Returns: search_summary, judge, assets, missing_advocates,
              party_addresses, party_additional_info, missing_data_log.
     """
+    logger.info(f"Starting run_llm_extraction for {case.cnr_number}")
     filled_prompt, user_content = build_llm_context(pdf_texts, case)
 
     if not pdf_texts:
@@ -457,6 +459,7 @@ def run_batch_adjudicator(batch_payload: dict) -> dict:
     batch_payload = {'entities_to_adjudicate': [...]}
     Returns {'resolutions': [...]}
     """
+    logger.info("Starting run_batch_adjudicator")
     if not batch_payload.get('entities_to_adjudicate'):
         return {'resolutions': []}
 
@@ -494,6 +497,7 @@ def run_llm_adjudicator(new_entity: dict, db_candidates: list) -> dict:
     db_candidates : list of dicts from get_fuzzy_candidates()
     Returns {'match_confidence': 'EXACT'|'NONE', 'matched_uuid': str|None, 'reasoning': str}
     """
+    logger.info(f"Starting run_llm_adjudicator for entity: {new_entity.get('name')}")
     user_string = (
         "--- NEW ENTITY ---\n"
         f"{_json.dumps(new_entity, indent=2)}\n\n"
@@ -538,6 +542,7 @@ def get_fuzzy_candidates(tx, name: str, entity_type: str) -> list[dict]:
     entity_type: 'organization' | 'judge' | 'person' | 'lawyer' |
                  'respondent' | 'petitioner' | 'court'
     """
+    logger.info(f"Starting get_fuzzy_candidates for name: {name}, type: {entity_type}")
     from utils.helpers import normalize_name
     norm     = normalize_name(name)
     fragment = norm[:12]
