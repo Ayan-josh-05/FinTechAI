@@ -1,0 +1,113 @@
+{
+  "csp_id": "fe92a73c928f0d2e9de5214cd735fbb6867d5dcead704efb3f85418a9ebee535",
+  "court": "ecourts_district_court",
+  "case_type": "exe",
+  "case_status": "disposed",
+  "filing_year": "2019",
+  "district": "gurugram",
+  "state": "haryana",
+  "updated_at": "2025-09-09T00:00:00Z",
+  "es_doc_id": "616c951009ec346c54ccb6ca",
+  "es_index": "ecourt_district_court_year_2019_to_2020",
+  "raw_details": "{\"action\":\"\",\"acts\":[{\"_id\":{\"$oid\":\"616c951009ec346c54ccb6dc\"},\"name\":\"Code of Civil Procedure\",\"section\":\"EXE\"}],\"alert_msg\":\"{}\",\"appeal_number\":\"\",\"archive\":\"Y\",\"assesment_year\":\"\",\"bench\":\"Not Found\",\"bench_alloted\":\"\",\"bench_nature\":\"\",\"case_bench\":\"\",\"case_code\":\"201200000702019\",\"case_history\":[{\"_id\":{\"$oid\":\"616c951009ec346c54ccb6dd\"},\"action\":\"\",\"afternoon_session_link\":\"\",\"bench_name\":\"\",\"bench_number\":\"\",\"case_number\":\"\",\"case_stage\":\"\",\"cause_list_type\":\"\",\"court_name\":\"\",\"date_of_upload\":null,\"diary_note\":{\"bussiness\":\"no\",\"next_purpose\":\"Appearance\",\"next_hearing_date\":\"2019-04-26T00:00:00.000Z\"},\"hearing_date\":null,\"judge_name\":\"Additional District and Sessions Judge\",\"last_hearing_date\":\"2019-01-11\",\"link\":\"\",\"list_type\":\"\",\"morning_session_link\":\"\",\"next_hearing_date\":\"2019-04-26\",\"order\":\"\",\"other\":\"\",\"purpose\":\"Appearance\",\"sources\":[],\"status\":\"\"},{\"_id\":{\"$oid\":\"616c951009ec346c54ccb6e1\"},\"action\":\"\",\"afternoon_session_link\":\"\",\"bench_name\":\"\",\"bench_number\":\"\",\"case_number\":\"\",\"case_stage\":\"\",\"cause_list_type\":\"\",\"court_name\":\"\",\"date_of_upload\":null,\"diary_note\":{\"bussiness\":\"no\",\"next_purpose\":\"Appearance\",\"next_hearing_date\":\"2019-08-07T00:00:00.000Z\"},\"hearing_date\":null,\"judge_name\":\"Additional District and Sessions Judge\",\"last_hearing_date\":\"2019-04-26\",\"link\":\"\",\"list_type\":\"\",\"morning_session_link\":\"\",\"next_hearing_date\":\"2019-08-07\",\"order\":\"\",\"other\":\"\",\"purpose\":\"Appearance\",\"sources\":[],\"status\":\"\"},{\"_id\":{\"$oid\":\"616c951009ec346c54ccb6e3\"},\"action\":\"\",\"afternoon_session_link\":\"\",\"bench_name\":\"\",\"bench_number\":\"\",\"case_number\":\"\",\"case_stage\":\"\",\"cause_list_type\":\"\",\"court_name\":\"\",\"date_of_upload\":null,\"diary_note\":{\"bussiness\":\"no\",\"next_purpose\":\"Appearance\",\"next_hearing_date\":\"2019-11-13T00:00:00.000Z\"},\"hearing_date\":null,\"judge_name\":\"Additional District and Sessions Judge\",\"last_hearing_date\":\"2019-08-07\",\"link\":\"\",\"list_type\":\"\",\"morning_session_link\":\"\",\"next_hearing_date\":\"2019-11-13\",\"order\":\"\",\"other\":\"\",\"purpose\":\"Appearance\",\"sources\":[],\"status\":\"\"},{\"_id\":{\"$oid\":\"616c951009ec346c54ccb6e6\"},\"action\":\"\",\"afternoon_session_link\":\"\",\"bench_name\":\"\",\"bench_number\":\"\",\"case_number\":\"\",\"case_stage\":\"\",\"cause_list_type\":\"\",\"court_name\":\"\",\"date_of_upload\":null,\"diary_note\":{\"bussiness\":\"PROCESS NOT EFFECTED. ISSUED AGAIN\",\"next_purpose\":\"Appearance\",\"next_hearing_date\":\"2020-01-24T00:00:00.000Z\"},\"hearing_date\":null,\"judge_name\":\"Additional District and Sessions Judge\",\"last_hearing_date\":\"2019-11-13\",\"link\":\"\",\"list_type\":\"\",\"morning_session_link\":\"\",\"next_hearing_date\":\"2020-01-24\",\"order\":\"\",\"other\":\"\",\"purpose\":\"Appearance\",\"sources\":[],\"status\":\"\"},{\"_id\":{\"$oid\":\"616c951009ec346c54ccb6e9\"},\"action\":\"\",\"afternoon_session_link\":\"\",\"bench_name\":\"\",\"bench_number\":\"\",\"case_number\":\"\",\"case_stage\":\"\",\"cause_list_type\":\"\",\"court_name\":\"\",\"date_of_upload\":null,\"diary_note\":{\"bussiness\":\"no\",\"next_purpose\":\"Appearance\",\"next_hearing_date\":\"2020-04-23T00:00:00.000Z\"},\"hearing_date\":null,\"judge_name\":\"Additional District and Sessions Judge\",\"last_hearing_date\":\"2020-01-24\",\"link\":\"\",\"list_type\":\"\",\"morning_session_link\":\"\",\"next_hearing_date\":\"2020-04-23\",\"order\":\"\",\"other\":\"\",\"purpose\":\"Appearance\",\"sources\":[],\"status\":\"\"},{\"_id\":{\"$oid\":\"616c951009ec346c54ccb6eb\"},\"action\":\"\",\"afternoon_session_link\":\"\",\"bench_name\":\"\",\"bench_number\":\"\",\"case_number\":\"\",\"case_stage\":\"\",\"cause_list_type\":\"\",\"court_name\":\"\",\"date_of_upload\":null,\"diary_note\":{\"bussiness\":\"no\",\"next_purpose\":\"Appearance\",\"next_hearing_date\":\"2020-08-17T00:00:00.000Z\"},\"hearing_date\":null,\"judge_name\":\"Additional District and Sessions Judge\",\"last_hearing_date\":\"2020-04-23\",\"link\":\"\",\"list_type\":\"\",\"morning_session_link\":\"\",\"next_hearing_date\":\"2020-08-17\",\"order\":\"\",\"other\":\"\",\"purpose\":\"Appearance\",\"sources\":[],\"status\":\"\"},{\"_id\":{\"$oid\":\"616c951109ec346c54ccb6ed\"},\"action\":\"\",\"afternoon_session_link\":\"\",\"bench_name\":\"\",\"bench_number\":\"\",\"case_number\":\"\",\"case_stage\":\"\",\"cause_list_type\":\"\",\"court_name\":\"\",\"date_of_upload\":null,\"diary_note\":{\"bussiness\":\"no\",\"next_purpose\":\"Appearance\",\"next_hearing_date\":\"2020-10-20T00:00:00.000Z\"},\"hearing_date\":null,\"judge_name\":\"Additional District and Sessions Judge\",\"last_hearing_date\":\"2020-08-17\",\"link\":\"\",\"list_type\":\"\",\"morning_session_link\":\"\",\"next_hearing_date\":\"2020-10-20\",\"order\":\"\",\"other\":\"\",\"purpose\":\"Appearance\",\"sources\":[],\"status\":\"\"},{\"_id\":{\"$oid\":\"616c951109ec346c54ccb6f0\"},\"action\":\"\",\"afternoon_session_link\":\"\",\"bench_name\":\"\",\"bench_number\":\"\",\"case_number\":\"\",\"case_stage\":\"\",\"cause_list_type\":\"\",\"court_name\":\"\",\"date_of_upload\":null,\"diary_note\":{\"bussiness\":\"no\",\"next_purpose\":\"Appearance\",\"next_hearing_date\":\"2021-01-18T00:00:00.000Z\"},\"hearing_date\":null,\"judge_name\":\"Additional District and Sessions Judge\",\"last_hearing_date\":\"2020-10-20\",\"link\":\"\",\"list_type\":\"\",\"morning_session_link\":\"\",\"next_hearing_date\":\"2021-01-18\",\"order\":\"\",\"other\":\"\",\"purpose\":\"Appearance\",\"sources\":[],\"status\":\"\"},{\"_id\":{\"$oid\":\"616c951109ec346c54ccb6f2\"},\"action\":\"\",\"afternoon_session_link\":\"\",\"bench_name\":\"\",\"bench_number\":\"\",\"case_number\":\"\",\"case_stage\":\"\",\"cause_list_type\":\"\",\"court_name\":\"\",\"date_of_upload\":null,\"diary_note\":{\"bussiness\":\"no\",\"next_purpose\":\"Appearance\",\"next_hearing_date\":\"2021-04-09T00:00:00.000Z\"},\"hearing_date\":null,\"judge_name\":\"Additional District and Sessions Judge\",\"last_hearing_date\":\"2021-01-18\",\"link\":\"\",\"list_type\":\"\",\"morning_session_link\":\"\",\"next_hearing_date\":\"2021-04-09\",\"order\":\"\",\"other\":\"\",\"purpose\":\"Appearance\",\"sources\":[],\"status\":\"\"},{\"_id\":{\"$oid\":\"616c951109ec346c54ccb6f5\"},\"action\":\"\",\"afternoon_session_link\":\"\",\"bench_name\":\"\",\"bench_number\":\"\",\"case_number\":\"\",\"case_stage\":\"\",\"cause_list_type\":\"\",\"court_name\":\"\",\"date_of_upload\":null,\"diary_note\":{\"bussiness\":\"no\",\"next_purpose\":\"Appearance\",\"next_hearing_date\":\"2021-07-28T00:00:00.000Z\"},\"hearing_date\":null,\"judge_name\":\"Additional District and Sessions Judge\",\"last_hearing_date\":\"2021-04-09\",\"link\":\"\",\"list_type\":\"\",\"morning_session_link\":\"\",\"next_hearing_date\":\"2021-07-28\",\"order\":\"\",\"other\":\"\",\"purpose\":\"Appearance\",\"sources\":[],\"status\":\"\"},{\"_id\":{\"$oid\":\"616c951109ec346c54ccb6f9\"},\"action\":\"\",\"afternoon_session_link\":\"\",\"bench_name\":\"\",\"bench_number\":\"\",\"case_number\":\"\",\"case_stage\":\"\",\"cause_list_type\":\"\",\"court_name\":\"\",\"date_of_upload\":null,\"diary_note\":{\"bussiness\":\"Disposed of as withdrawn\",\"nature_of_disposal\":\"DISPOSED OF AS WITHDRAWN\",\"disposal_date\":\"2021-07-28T00:00:00.000Z\"},\"hearing_date\":null,\"judge_name\":\"Additional District and Sessions Judge\",\"last_hearing_date\":\"2021-07-28\",\"link\":\"\",\"list_type\":\"\",\"morning_session_link\":\"\",\"next_hearing_date\":null,\"order\":\"\",\"other\":\"\",\"purpose\":\"Disposed\",\"sources\":[],\"status\":\"\"}],\"case_number\":\"70/2019\",\"case_stage\":\"Appearance \",\"case_status\":\"Disposed\",\"case_type\":\"EXE\",\"case_type_code\":\"EXE\",\"case_year\":\"2019\",\"caseidin\":null,\"category\":\"\",\"cause_list_name\":\"\",\"caveat_number\":\"\",\"classification_number\":\"\",\"cnr_number\":\"HRGR010006832019\",\"company_appeal_number\":\"\",\"coram\":\"\",\"court\":\"District and Sessions Courts, Gurugram\",\"court_code\":\"\",\"court_number\":\"28\",\"crawler_source\":\"mobile\",\"created_at\":\"2021-10-17T21:26:40.640Z\",\"csp_attrs\":\"ecourts_district_court~||~HRGR010006832019\",\"csp_id\":\"fe92a73c928f0d2e9de5214cd735fbb6867d5dcead704efb3f85418a9ebee535\",\"current_position\":\"\",\"da_name\":\"\",\"date_of_destruction\":null,\"decision_date\":\"2021-07-28\",\"dfr_number\":\"\",\"dfr_year\":\"\",\"diary_number\":\"\",\"diary_year\":\"\",\"disposal_date\":null,\"district\":\"Gurugram\",\"district_code\":\"\",\"error_msg\":\"{}\",\"establishment_code\":\"\",\"facts\":null,\"filing_date\":\"2019-01-11\",\"filing_number\":\"399/2019\",\"filing_year\":\"2019\",\"final_hearing_date\":null,\"first_entry_clerk\":\"\",\"first_hearing_date\":\"2019-01-11\",\"forum\":\"\",\"impugn_date\":null,\"impugn_number\":\"\",\"impugn_type\":\"\",\"in_favour_of\":null,\"is_dirty\":false,\"is_migrated\":false,\"is_reindexed\":false,\"issues\":null,\"judgement\":\"\",\"judgement_appealed\":null,\"judgement_appealed_storage_id\":null,\"judgement_page\":null,\"judgement_page_bailii\":null,\"judgement_page_bailii_storage_id\":null,\"judgement_page_storage_id\":null,\"judicial\":\"\",\"last_hearing_date\":\"2021-07-28\",\"last_order\":null,\"last_posted_for\":\"\",\"list_type\":\"\",\"lodging_number\":\"\",\"main_case_detail\":\"\",\"main_matter\":\"\",\"main_matter_lodging_number\":\"\",\"main_matter_registration_number\":\"\",\"main_matter_stamp_number\":\"\",\"manual_petitioner\":\"\",\"manual_respondent\":\"\",\"manually_inserted\":false,\"migration_params\":{},\"multiple_cases\":\"\",\"neutral_citation\":null,\"next_hearing_date\":\"2021-07-28\",\"next_listing_purpose\":\"\",\"order\":\"\",\"order_date\":null,\"order_details\":[{\"_id\":{\"$oid\":\"6261385f09ec343820ae247d\"},\"afternoon_session_link\":\"\",\"case_number\":\"\",\"court_name\":\"\",\"data\":\"\",\"judge\":\"\",\"morning_session_link\":\"\",\"order_date\":\"2021-07-28\",\"order_detail_link\":\"\",\"order_number\":\"11\",\"order_type\":\"order/judgement\",\"petitioner_name\":\"\",\"pronounced_date\":null,\"purpose\":\"\",\"respondent_name\":\"\",\"result\":\"\",\"section\":\"\",\"status\":\"\",\"storage_id\":\"ecourts/HRGR010006832019/order_judgement/2021-07-28.pdf\",\"tags\":\"\"},{\"_id\":{\"$oid\":\"6261386009ec343820ae2483\"},\"afternoon_session_link\":\"\",\"case_number\":\"\",\"court_name\":\"\",\"data\":\"\",\"judge\":\"\",\"morning_session_link\":\"\",\"order_date\":\"2019-01-11\",\"order_detail_link\":\"\",\"order_number\":\"1\",\"order_type\":\"order/judgement\",\"petitioner_name\":\"\",\"pronounced_date\":null,\"purpose\":\"\",\"respondent_name\":\"\",\"result\":\"\",\"section\":\"\",\"status\":\"\",\"storage_id\":\"ecourts/HRGR010006832019/order_judgement/2019-01-11.pdf\",\"tags\":\"\"},{\"_id\":{\"$oid\":\"6261386209ec343820ae248a\"},\"afternoon_session_link\":\"\",\"case_number\":\"\",\"court_name\":\"\",\"data\":\"\",\"judge\":\"\",\"morning_session_link\":\"\",\"order_date\":\"2019-04-26\",\"order_detail_link\":\"\",\"order_number\":\"2\",\"order_type\":\"order/judgement\",\"petitioner_name\":\"\",\"pronounced_date\":null,\"purpose\":\"\",\"respondent_name\":\"\",\"result\":\"\",\"section\":\"\",\"status\":\"\",\"storage_id\":\"ecourts/HRGR010006832019/order_judgement/2019-04-26.pdf\",\"tags\":\"\"},{\"_id\":{\"$oid\":\"6261386209ec343820ae2493\"},\"afternoon_session_link\":\"\",\"case_number\":\"\",\"court_name\":\"\",\"data\":\"\",\"judge\":\"\",\"morning_session_link\":\"\",\"order_date\":\"2019-08-07\",\"order_detail_link\":\"\",\"order_number\":\"3\",\"order_type\":\"order/judgement\",\"petitioner_name\":\"\",\"pronounced_date\":null,\"purpose\":\"\",\"respondent_name\":\"\",\"result\":\"\",\"section\":\"\",\"status\":\"\",\"storage_id\":\"ecourts/HRGR010006832019/order_judgement/2019-08-07.pdf\",\"tags\":\"\"},{\"_id\":{\"$oid\":\"6261386409ec343820ae2495\"},\"afternoon_session_link\":\"\",\"case_number\":\"\",\"court_name\":\"\",\"data\":\"\",\"judge\":\"\",\"morning_session_link\":\"\",\"order_date\":\"2020-01-24\",\"order_detail_link\":\"\",\"order_number\":\"4\",\"order_type\":\"order/judgement\",\"petitioner_name\":\"\",\"pronounced_date\":null,\"purpose\":\"\",\"respondent_name\":\"\",\"result\":\"\",\"section\":\"\",\"status\":\"\",\"storage_id\":\"ecourts/HRGR010006832019/order_judgement/2020-01-24.pdf\",\"tags\":\"\"},{\"_id\":{\"$oid\":\"6261386509ec343820ae2499\"},\"afternoon_session_link\":\"\",\"case_number\":\"\",\"court_name\":\"\",\"data\":\"\",\"judge\":\"\",\"morning_session_link\":\"\",\"order_date\":\"2019-11-13\",\"order_detail_link\":\"\",\"order_number\":\"5\",\"order_type\":\"order/judgement\",\"petitioner_name\":\"\",\"pronounced_date\":null,\"purpose\":\"\",\"respondent_name\":\"\",\"result\":\"\",\"section\":\"\",\"status\":\"\",\"storage_id\":\"ecourts/HRGR010006832019/order_judgement/2019-11-13.pdf\",\"tags\":\"\"},{\"_id\":{\"$oid\":\"6261386709ec343820ae249e\"},\"afternoon_session_link\":\"\",\"case_number\":\"\",\"court_name\":\"\",\"data\":\"\",\"judge\":\"\",\"morning_session_link\":\"\",\"order_date\":\"2020-04-23\",\"order_detail_link\":\"\",\"order_number\":\"6\",\"order_type\":\"order/judgement\",\"petitioner_name\":\"\",\"pronounced_date\":null,\"purpose\":\"\",\"respondent_name\":\"\",\"result\":\"\",\"section\":\"\",\"status\":\"\",\"storage_id\":\"ecourts/HRGR010006832019/order_judgement/2020-04-23.pdf\",\"tags\":\"\"},{\"_id\":{\"$oid\":\"6261386909ec343820ae24a5\"},\"afternoon_session_link\":\"\",\"case_number\":\"\",\"court_name\":\"\",\"data\":\"\",\"judge\":\"\",\"morning_session_link\":\"\",\"order_date\":\"2020-08-17\",\"order_detail_link\":\"\",\"order_number\":\"7\",\"order_type\":\"order/judgement\",\"petitioner_name\":\"\",\"pronounced_date\":null,\"purpose\":\"\",\"respondent_name\":\"\",\"result\":\"\",\"section\":\"\",\"status\":\"\",\"storage_id\":\"ecourts/HRGR010006832019/order_judgement/2020-08-17.pdf\",\"tags\":\"\"},{\"_id\":{\"$oid\":\"6261386909ec343820ae24a8\"},\"afternoon_session_link\":\"\",\"case_number\":\"\",\"court_name\":\"\",\"data\":\"\",\"judge\":\"\",\"morning_session_link\":\"\",\"order_date\":\"2020-10-20\",\"order_detail_link\":\"\",\"order_number\":\"8\",\"order_type\":\"order/judgement\",\"petitioner_name\":\"\",\"pronounced_date\":null,\"purpose\":\"\",\"respondent_name\":\"\",\"result\":\"\",\"section\":\"\",\"status\":\"\",\"storage_id\":\"ecourts/HRGR010006832019/order_judgement/2020-10-20.pdf\",\"tags\":\"\"},{\"_id\":{\"$oid\":\"6261386a09ec343820ae24af\"},\"afternoon_session_link\":\"\",\"case_number\":\"\",\"court_name\":\"\",\"data\":\"\",\"judge\":\"\",\"morning_session_link\":\"\",\"order_date\":\"2021-01-18\",\"order_detail_link\":\"\",\"order_number\":\"9\",\"order_type\":\"order/judgement\",\"petitioner_name\":\"\",\"pronounced_date\":null,\"purpose\":\"\",\"respondent_name\":\"\",\"result\":\"\",\"section\":\"\",\"status\":\"\",\"storage_id\":\"ecourts/HRGR010006832019/order_judgement/2021-01-18.pdf\",\"tags\":\"\"},{\"_id\":{\"$oid\":\"6261386a09ec343820ae24b1\"},\"afternoon_session_link\":\"\",\"case_number\":\"\",\"court_name\":\"\",\"data\":\"\",\"judge\":\"\",\"morning_session_link\":\"\",\"order_date\":\"2021-04-09\",\"order_detail_link\":\"\",\"order_number\":\"10\",\"order_type\":\"order/judgement\",\"petitioner_name\":\"\",\"pronounced_date\":null,\"purpose\":\"\",\"respondent_name\":\"\",\"result\":\"\",\"section\":\"\",\"status\":\"\",\"storage_id\":\"ecourts/HRGR010006832019/order_judgement/2021-04-09.pdf\",\"tags\":\"\"}],\"order_judgement_storage_id\":\"\",\"order_number\":\"\",\"order_result\":\"\",\"params_id\":null,\"petitioner_advocates\":[{\"_id\":{\"$oid\":\"616c951009ec346c54ccb6d8\"},\"code\":\"\",\"name\":\"Ajay Singh Tanwar\"}],\"petitioners\":[{\"_id\":{\"$oid\":\"616c951009ec346c54ccb6d2\"},\"address\":\"1) MS TATA CAPITAL FINANCIAL SERVICES Advocate - Ajay Singh Tanwar\",\"advocate\":\"\",\"name\":\"MS TATA CAPITAL FINANCIAL SERVICES\",\"petitioner_advocate\":\"\"}],\"presentation_date\":null,\"presented_by\":\"\",\"press_summary\":null,\"press_summary_storage_id\":null,\"pronouncement_date\":null,\"purpose\":\"\",\"rbt_details\":\"\",\"registration_date\":\"2019-01-11\",\"registration_number\":\"70/2019\",\"registration_year\":\"2019\",\"reporting_restrictions\":null,\"respondent_advocates\":[{\"_id\":{\"$oid\":\"616c951009ec346c54ccb6d9\"},\"code\":\"\",\"name\":\"\"}],\"respondents\":[{\"_id\":{\"$oid\":\"616c951009ec346c54ccb6d4\"},\"address\":\"1) SUSHIL KUMAR\",\"advocate\":\"\",\"name\":\"SUSHIL KUMAR\",\"respondent_advocate\":\"\"}],\"search_by\":\"\",\"short_order\":\"\",\"side\":\"\",\"source\":\"ecourts_district_court\",\"stamp_number\":\"\",\"state\":\"haryana\",\"state_code\":\"\",\"statutory_info\":\"\",\"storage_id\":\"\",\"tentative_date\":null,\"tribunal_date\":null,\"tribunal_order_link\":\"\",\"type_of_disposal\":\"34\",\"u_section\":\"\",\"update_on\":null,\"updated_at\":\"2022-04-21T10:56:22.536Z\",\"updated_csp\":null}",
+  "case_no": "70/2019",
+  "cnr_number": "HRGR010006832019",
+  "filing_number": "399/2019",
+  "case_title": null,
+  "petitioners": [
+    "MS TATA CAPITAL FINANCIAL SERVICES"
+  ],
+  "respondents": [
+    "SUSHIL KUMAR"
+  ],
+  "documents": [
+    {
+      "storage_id": "ecourts/HRGR010006832019/order_judgement/2021-07-28.pdf",
+      "order_date": "2021-07-28",
+      "order_number": "11",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/HRGR010006832019/order_judgement/2019-01-11.pdf",
+      "order_date": "2019-01-11",
+      "order_number": "1",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/HRGR010006832019/order_judgement/2019-04-26.pdf",
+      "order_date": "2019-04-26",
+      "order_number": "2",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/HRGR010006832019/order_judgement/2019-08-07.pdf",
+      "order_date": "2019-08-07",
+      "order_number": "3",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/HRGR010006832019/order_judgement/2020-01-24.pdf",
+      "order_date": "2020-01-24",
+      "order_number": "4",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/HRGR010006832019/order_judgement/2019-11-13.pdf",
+      "order_date": "2019-11-13",
+      "order_number": "5",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/HRGR010006832019/order_judgement/2020-04-23.pdf",
+      "order_date": "2020-04-23",
+      "order_number": "6",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/HRGR010006832019/order_judgement/2020-08-17.pdf",
+      "order_date": "2020-08-17",
+      "order_number": "7",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/HRGR010006832019/order_judgement/2020-10-20.pdf",
+      "order_date": "2020-10-20",
+      "order_number": "8",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/HRGR010006832019/order_judgement/2021-01-18.pdf",
+      "order_date": "2021-01-18",
+      "order_number": "9",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/HRGR010006832019/order_judgement/2021-04-09.pdf",
+      "order_date": "2021-04-09",
+      "order_number": "10",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    }
+  ]
+}

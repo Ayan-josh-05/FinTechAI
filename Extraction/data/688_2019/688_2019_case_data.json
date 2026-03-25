@@ -1,0 +1,161 @@
+{
+  "csp_id": "dbd9bad9123e25418fdab8d40e941dc25746087fbecc4a5057301db2e0e602ce",
+  "court": "ecourts_district_court",
+  "case_type": "ndps",
+  "case_status": "disposed",
+  "filing_year": "2019",
+  "district": "tarn taran",
+  "state": "punjab",
+  "updated_at": "2025-09-09T00:00:00Z",
+  "es_doc_id": "6351311744ad6804ac2a819b",
+  "es_index": "ecourt_district_court_year_2019_to_2020",
+  "raw_details": "{\"created_at\":\"2022-10-20T11:29:27.412Z\",\"updated_at\":\"2023-11-12T02:05:47.765Z\",\"csp_id\":\"dbd9bad9123e25418fdab8d40e941dc25746087fbecc4a5057301db2e0e602ce\",\"csp_attrs\":\"ecourts_district_court~||~PBTT010070692019\",\"cnr_number\":\"PBTT010070692019\",\"case_number\":\"688/2019\",\"filing_number\":\"5701/2019\",\"filing_year\":\"2019\",\"registration_number\":\"688/2019\",\"registration_year\":\"2019\",\"court_number\":\"1\",\"court_code\":\"\",\"stamp_number\":\"\",\"classification_number\":\"\",\"company_appeal_number\":\"\",\"diary_number\":\"\",\"dfr_number\":\"\",\"last_posted_for\":\"\",\"judicial\":\"\",\"coram\":\"\",\"cause_list_name\":\"\",\"short_order\":\"\",\"forum\":\"\",\"rbt_details\":\"\",\"archive\":\"Y\",\"appeal_number\":\"\",\"order_result\":\"\",\"order_number\":\"\",\"tribunal_order_link\":\"\",\"order_judgement_storage_id\":\"\",\"establishment_code\":\"\",\"case_type\":\"NDPS\",\"case_type_code\":\"NDPS\",\"case_status\":\"DISPOSED\",\"case_stage\":\"Prosecution Evidence \",\"case_year\":\"2019\",\"diary_year\":\"\",\"dfr_year\":\"\",\"case_bench\":\"\",\"type_of_disposal\":\"29\",\"court\":\"District and Sessions Courts,Tarn Taran\",\"multiple_cases\":\"\",\"purpose\":\"\",\"current_position\":\"\",\"bench_alloted\":\"\",\"assesment_year\":\"\",\"judgement\":\"\",\"statutory_info\":\"\",\"da_name\":\"\",\"u_section\":\"\",\"caveat_number\":\"\",\"first_entry_clerk\":\"\",\"source\":\"ecourts_district_court\",\"crawler_source\":\"mobile\",\"update_on\":null,\"tentative_date\":null,\"last_order\":null,\"filing_date\":\"2019-12-21\",\"registration_date\":\"2019-12-21\",\"first_hearing_date\":\"2019-12-21\",\"next_hearing_date\":\"2023-08-23\",\"last_hearing_date\":\"2023-08-23\",\"decision_date\":\"2023-08-23\",\"disposal_date\":null,\"presentation_date\":null,\"order_date\":null,\"final_hearing_date\":null,\"date_of_destruction\":null,\"tribunal_date\":null,\"pronouncement_date\":null,\"bench\":\"Not Found\",\"bench_nature\":\"\",\"next_listing_purpose\":\"\",\"presented_by\":\"\",\"side\":\"\",\"main_matter\":\"\",\"main_matter_registration_number\":\"\",\"main_matter_lodging_number\":\"\",\"main_matter_stamp_number\":\"\",\"lodging_number\":\"\",\"state\":\"punjab\",\"state_code\":\"\",\"district\":\"Tarn Taran\",\"district_code\":\"\",\"category\":\"\",\"action\":\"\",\"order\":\"\",\"main_case_detail\":\"\",\"list_type\":\"\",\"search_by\":\"\",\"manual_petitioner\":\"\",\"manual_respondent\":\"\",\"impugn_type\":\"\",\"impugn_number\":\"\",\"impugn_date\":null,\"storage_id\":\"\",\"updated_csp\":null,\"is_migrated\":false,\"is_reindexed\":false,\"migration_params\":{},\"params_id\":null,\"case_code\":\"202700006882019\",\"caseidin\":null,\"in_favour_of\":null,\"issues\":null,\"facts\":null,\"judgement_appealed\":null,\"press_summary\":null,\"judgement_page_bailii\":null,\"judgement_page\":null,\"neutral_citation\":null,\"reporting_restrictions\":null,\"judgement_page_bailii_storage_id\":null,\"press_summary_storage_id\":null,\"judgement_page_storage_id\":null,\"judgement_appealed_storage_id\":null,\"is_dirty\":false,\"error_msg\":\"{\\\"message\\\"=>\\\"execution expired\\\"}\",\"alert_msg\":\"{}\",\"manually_inserted\":false,\"petitioner_advocates\":[{\"code\":\"\",\"name\":\"APP\",\"_id\":{\"$oid\":\"63c066c209ec340c82012466\"}}],\"acts\":[{\"name\":\"NARCOTIC DRUGS AND PSYCHOTROPIC SUBSTANCES ACT\",\"section\":\"22\",\"_id\":{\"$oid\":\"63c066c209ec340c82012469\"}}],\"order_details\":[{\"afternoon_session_link\":\"\",\"data\":\"\",\"purpose\":\"\",\"order_number\":\"1\",\"section\":\"\",\"petitioner_name\":\"\",\"tags\":\"\",\"result\":\"\",\"order_date\":\"2019-12-21\",\"pronounced_date\":null,\"order_detail_link\":\"\",\"respondent_name\":\"\",\"storage_id\":\"ecourts/PBTT010070692019/order_judgement/2019-12-21.pdf\",\"morning_session_link\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c409ec340c820124c0\"},\"judge\":\"\",\"court_name\":\"\",\"order_type\":\"order/judgement\",\"status\":\"\"},{\"afternoon_session_link\":\"\",\"data\":\"\",\"purpose\":\"\",\"order_number\":\"2\",\"section\":\"\",\"petitioner_name\":\"\",\"tags\":\"\",\"result\":\"\",\"order_date\":\"2020-01-16\",\"pronounced_date\":null,\"order_detail_link\":\"\",\"respondent_name\":\"\",\"storage_id\":\"ecourts/PBTT010070692019/order_judgement/2020-01-16.pdf\",\"morning_session_link\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c509ec340c820124ca\"},\"judge\":\"\",\"court_name\":\"\",\"order_type\":\"order/judgement\",\"status\":\"\"},{\"afternoon_session_link\":\"\",\"data\":\"\",\"purpose\":\"\",\"order_number\":\"3\",\"section\":\"\",\"petitioner_name\":\"\",\"tags\":\"\",\"result\":\"\",\"order_date\":\"2020-03-19\",\"pronounced_date\":null,\"order_detail_link\":\"\",\"respondent_name\":\"\",\"storage_id\":\"ecourts/PBTT010070692019/order_judgement/2020-03-19.pdf\",\"morning_session_link\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c509ec340c820124d2\"},\"judge\":\"\",\"court_name\":\"\",\"order_type\":\"order/judgement\",\"status\":\"\"},{\"afternoon_session_link\":\"\",\"data\":\"\",\"purpose\":\"\",\"order_number\":\"4\",\"section\":\"\",\"petitioner_name\":\"\",\"tags\":\"\",\"result\":\"\",\"order_date\":\"2020-05-21\",\"pronounced_date\":null,\"order_detail_link\":\"\",\"respondent_name\":\"\",\"storage_id\":\"ecourts/PBTT010070692019/order_judgement/2020-05-21.pdf\",\"morning_session_link\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c509ec340c820124da\"},\"judge\":\"\",\"court_name\":\"\",\"order_type\":\"order/judgement\",\"status\":\"\"},{\"afternoon_session_link\":\"\",\"data\":\"\",\"purpose\":\"\",\"order_number\":\"5\",\"section\":\"\",\"petitioner_name\":\"\",\"tags\":\"\",\"result\":\"\",\"order_date\":\"2020-07-13\",\"pronounced_date\":null,\"order_detail_link\":\"\",\"respondent_name\":\"\",\"storage_id\":\"ecourts/PBTT010070692019/order_judgement/2020-07-13.pdf\",\"morning_session_link\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c509ec340c820124e0\"},\"judge\":\"\",\"court_name\":\"\",\"order_type\":\"order/judgement\",\"status\":\"\"},{\"afternoon_session_link\":\"\",\"data\":\"\",\"purpose\":\"\",\"order_number\":\"6\",\"section\":\"\",\"petitioner_name\":\"\",\"tags\":\"\",\"result\":\"\",\"order_date\":\"2020-09-08\",\"pronounced_date\":null,\"order_detail_link\":\"\",\"respondent_name\":\"\",\"storage_id\":\"ecourts/PBTT010070692019/order_judgement/2020-09-08.pdf\",\"morning_session_link\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c509ec340c820124e9\"},\"judge\":\"\",\"court_name\":\"\",\"order_type\":\"order/judgement\",\"status\":\"\"},{\"afternoon_session_link\":\"\",\"data\":\"\",\"purpose\":\"\",\"order_number\":\"7\",\"section\":\"\",\"petitioner_name\":\"\",\"tags\":\"\",\"result\":\"\",\"order_date\":\"2020-10-22\",\"pronounced_date\":null,\"order_detail_link\":\"\",\"respondent_name\":\"\",\"storage_id\":\"ecourts/PBTT010070692019/order_judgement/2020-10-22.pdf\",\"morning_session_link\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c509ec340c820124f7\"},\"judge\":\"\",\"court_name\":\"\",\"order_type\":\"order/judgement\",\"status\":\"\"},{\"afternoon_session_link\":\"\",\"data\":\"\",\"purpose\":\"\",\"order_number\":\"8\",\"section\":\"\",\"petitioner_name\":\"\",\"tags\":\"\",\"result\":\"\",\"order_date\":\"2020-12-08\",\"pronounced_date\":null,\"order_detail_link\":\"\",\"respondent_name\":\"\",\"storage_id\":\"ecourts/PBTT010070692019/order_judgement/2020-12-08.pdf\",\"morning_session_link\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c509ec340c82012501\"},\"judge\":\"\",\"court_name\":\"\",\"order_type\":\"order/judgement\",\"status\":\"\"},{\"afternoon_session_link\":\"\",\"data\":\"\",\"purpose\":\"\",\"order_number\":\"9\",\"section\":\"\",\"petitioner_name\":\"\",\"tags\":\"\",\"result\":\"\",\"order_date\":\"2021-02-01\",\"pronounced_date\":null,\"order_detail_link\":\"\",\"respondent_name\":\"\",\"storage_id\":\"ecourts/PBTT010070692019/order_judgement/2021-02-01.pdf\",\"morning_session_link\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c509ec340c82012507\"},\"judge\":\"\",\"court_name\":\"\",\"order_type\":\"order/judgement\",\"status\":\"\"},{\"afternoon_session_link\":\"\",\"data\":\"\",\"purpose\":\"\",\"order_number\":\"10\",\"section\":\"\",\"petitioner_name\":\"\",\"tags\":\"\",\"result\":\"\",\"order_date\":\"2021-03-06\",\"pronounced_date\":null,\"order_detail_link\":\"\",\"respondent_name\":\"\",\"storage_id\":\"ecourts/PBTT010070692019/order_judgement/2021-03-06.pdf\",\"morning_session_link\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c609ec340c8201250c\"},\"judge\":\"\",\"court_name\":\"\",\"order_type\":\"order/judgement\",\"status\":\"\"},{\"afternoon_session_link\":\"\",\"data\":\"\",\"purpose\":\"\",\"order_number\":\"11\",\"section\":\"\",\"petitioner_name\":\"\",\"tags\":\"\",\"result\":\"\",\"order_date\":\"2021-05-11\",\"pronounced_date\":null,\"order_detail_link\":\"\",\"respondent_name\":\"\",\"storage_id\":\"ecourts/PBTT010070692019/order_judgement/2021-05-11.pdf\",\"morning_session_link\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c609ec340c82012510\"},\"judge\":\"\",\"court_name\":\"\",\"order_type\":\"order/judgement\",\"status\":\"\"},{\"afternoon_session_link\":\"\",\"data\":\"\",\"purpose\":\"\",\"order_number\":\"12\",\"section\":\"\",\"petitioner_name\":\"\",\"tags\":\"\",\"result\":\"\",\"order_date\":\"2021-08-11\",\"pronounced_date\":null,\"order_detail_link\":\"\",\"respondent_name\":\"\",\"storage_id\":\"ecourts/PBTT010070692019/order_judgement/2021-08-11.pdf\",\"morning_session_link\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c609ec340c82012518\"},\"judge\":\"\",\"court_name\":\"\",\"order_type\":\"order/judgement\",\"status\":\"\"},{\"afternoon_session_link\":\"\",\"data\":\"\",\"purpose\":\"\",\"order_number\":\"13\",\"section\":\"\",\"petitioner_name\":\"\",\"tags\":\"\",\"result\":\"\",\"order_date\":\"2021-11-23\",\"pronounced_date\":null,\"order_detail_link\":\"\",\"respondent_name\":\"\",\"storage_id\":\"ecourts/PBTT010070692019/order_judgement/2021-11-23.pdf\",\"morning_session_link\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c609ec340c82012522\"},\"judge\":\"\",\"court_name\":\"\",\"order_type\":\"order/judgement\",\"status\":\"\"},{\"afternoon_session_link\":\"\",\"data\":\"\",\"purpose\":\"\",\"order_number\":\"14\",\"section\":\"\",\"petitioner_name\":\"\",\"tags\":\"\",\"result\":\"\",\"order_date\":\"2022-01-18\",\"pronounced_date\":null,\"order_detail_link\":\"\",\"respondent_name\":\"\",\"storage_id\":\"ecourts/PBTT010070692019/order_judgement/2022-01-18.pdf\",\"morning_session_link\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c609ec340c82012525\"},\"judge\":\"\",\"court_name\":\"\",\"order_type\":\"order/judgement\",\"status\":\"\"},{\"afternoon_session_link\":\"\",\"data\":\"\",\"purpose\":\"\",\"order_number\":\"15\",\"section\":\"\",\"petitioner_name\":\"\",\"tags\":\"\",\"result\":\"\",\"order_date\":\"2022-04-19\",\"pronounced_date\":null,\"order_detail_link\":\"\",\"respondent_name\":\"\",\"storage_id\":\"ecourts/PBTT010070692019/order_judgement/2022-04-19.pdf\",\"morning_session_link\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c609ec340c8201252e\"},\"judge\":\"\",\"court_name\":\"\",\"order_type\":\"order/judgement\",\"status\":\"\"},{\"afternoon_session_link\":\"\",\"data\":\"\",\"purpose\":\"\",\"order_number\":\"16\",\"section\":\"\",\"petitioner_name\":\"\",\"tags\":\"\",\"result\":\"\",\"order_date\":\"2022-08-18\",\"pronounced_date\":null,\"order_detail_link\":\"\",\"respondent_name\":\"\",\"storage_id\":\"ecourts/PBTT010070692019/order_judgement/2022-08-18.pdf\",\"morning_session_link\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c609ec340c8201253b\"},\"judge\":\"\",\"court_name\":\"\",\"order_type\":\"order/judgement\",\"status\":\"\"},{\"afternoon_session_link\":\"\",\"data\":\"\",\"purpose\":\"\",\"order_number\":\"17\",\"section\":\"\",\"petitioner_name\":\"\",\"tags\":\"\",\"result\":\"\",\"order_date\":\"2022-10-20\",\"pronounced_date\":null,\"order_detail_link\":\"\",\"respondent_name\":\"\",\"storage_id\":\"ecourts/PBTT010070692019/order_judgement/2022-10-20.pdf\",\"morning_session_link\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c709ec340c8201253f\"},\"judge\":\"\",\"court_name\":\"\",\"order_type\":\"order/judgement\",\"status\":\"\"}],\"petitioners\":[{\"address\":\"1) STATE Advocate - APP\",\"petitioner_advocate\":\"\",\"name\":\"STATE\",\"_id\":{\"$oid\":\"63c066c209ec340c82012463\"},\"advocate\":\"\"}],\"case_history\":[{\"date_of_upload\":null,\"other\":\"\",\"afternoon_session_link\":\"\",\"last_hearing_date\":\"2019-12-21\",\"sources\":[],\"purpose\":\"Charge\",\"link\":\"\",\"diary_note\":{\"next_purpose\":\"Charge\",\"bussiness\":\"--\",\"next_hearing_date\":\"2020-01-16T00:00:00.000Z\"},\"next_hearing_date\":\"2020-01-16\",\"hearing_date\":null,\"list_type\":\"\",\"bench_name\":\"\",\"case_stage\":\"\",\"morning_session_link\":\"\",\"action\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c209ec340c8201246a\"},\"bench_number\":\"\",\"court_name\":\"\",\"cause_list_type\":\"\",\"judge_name\":\"Additional District and Sessions Judge\",\"order\":\"\",\"status\":\"\"},{\"date_of_upload\":null,\"other\":\"\",\"afternoon_session_link\":\"\",\"last_hearing_date\":\"2020-01-16\",\"sources\":[],\"purpose\":\"Prosecution Evidence\",\"link\":\"\",\"diary_note\":{\"next_purpose\":\"Prosecution Evidence\",\"bussiness\":\"--\",\"next_hearing_date\":\"2020-03-19T00:00:00.000Z\"},\"next_hearing_date\":\"2020-03-19\",\"hearing_date\":null,\"list_type\":\"\",\"bench_name\":\"\",\"case_stage\":\"\",\"morning_session_link\":\"\",\"action\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c209ec340c8201246e\"},\"bench_number\":\"\",\"court_name\":\"\",\"cause_list_type\":\"\",\"judge_name\":\"Additional District and Sessions Judge\",\"order\":\"\",\"status\":\"\"},{\"date_of_upload\":null,\"other\":\"\",\"afternoon_session_link\":\"\",\"last_hearing_date\":\"2020-03-19\",\"sources\":[],\"purpose\":\"Prosecution Evidence\",\"link\":\"\",\"diary_note\":{\"next_purpose\":\"Prosecution Evidence\",\"bussiness\":\"--\",\"next_hearing_date\":\"2020-05-21T00:00:00.000Z\"},\"next_hearing_date\":\"2020-05-21\",\"hearing_date\":null,\"list_type\":\"\",\"bench_name\":\"\",\"case_stage\":\"\",\"morning_session_link\":\"\",\"action\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c209ec340c82012473\"},\"bench_number\":\"\",\"court_name\":\"\",\"cause_list_type\":\"\",\"judge_name\":\"Additional District and Sessions Judge\",\"order\":\"\",\"status\":\"\"},{\"date_of_upload\":null,\"other\":\"\",\"afternoon_session_link\":\"\",\"last_hearing_date\":\"2020-05-21\",\"sources\":[],\"purpose\":\"Prosecution Evidence\",\"link\":\"\",\"diary_note\":{\"next_purpose\":\"Prosecution Evidence\",\"bussiness\":\"--\",\"next_hearing_date\":\"2020-07-13T00:00:00.000Z\"},\"next_hearing_date\":\"2020-07-13\",\"hearing_date\":null,\"list_type\":\"\",\"bench_name\":\"\",\"case_stage\":\"\",\"morning_session_link\":\"\",\"action\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c209ec340c82012475\"},\"bench_number\":\"\",\"court_name\":\"\",\"cause_list_type\":\"\",\"judge_name\":\"Additional District and Sessions Judge\",\"order\":\"\",\"status\":\"\"},{\"date_of_upload\":null,\"other\":\"\",\"afternoon_session_link\":\"\",\"last_hearing_date\":\"2020-07-13\",\"sources\":[],\"purpose\":\"Prosecution Evidence\",\"link\":\"\",\"diary_note\":{\"next_purpose\":\"Prosecution Evidence\",\"bussiness\":\"--\",\"next_hearing_date\":\"2020-09-08T00:00:00.000Z\"},\"next_hearing_date\":\"2020-09-08\",\"hearing_date\":null,\"list_type\":\"\",\"bench_name\":\"\",\"case_stage\":\"\",\"morning_session_link\":\"\",\"action\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c209ec340c8201247a\"},\"bench_number\":\"\",\"court_name\":\"\",\"cause_list_type\":\"\",\"judge_name\":\"Additional District and Sessions Judge\",\"order\":\"\",\"status\":\"\"},{\"date_of_upload\":null,\"other\":\"\",\"afternoon_session_link\":\"\",\"last_hearing_date\":\"2020-09-08\",\"sources\":[],\"purpose\":\"Prosecution Evidence\",\"link\":\"\",\"diary_note\":{\"next_purpose\":\"Prosecution Evidence\",\"bussiness\":\"--\",\"next_hearing_date\":\"2020-10-22T00:00:00.000Z\"},\"next_hearing_date\":\"2020-10-22\",\"hearing_date\":null,\"list_type\":\"\",\"bench_name\":\"\",\"case_stage\":\"\",\"morning_session_link\":\"\",\"action\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c209ec340c8201247e\"},\"bench_number\":\"\",\"court_name\":\"\",\"cause_list_type\":\"\",\"judge_name\":\"Additional District and Sessions Judge\",\"order\":\"\",\"status\":\"\"},{\"date_of_upload\":null,\"other\":\"\",\"afternoon_session_link\":\"\",\"last_hearing_date\":\"2020-10-22\",\"sources\":[],\"purpose\":\"Prosecution Evidence\",\"link\":\"\",\"diary_note\":{\"next_purpose\":\"Prosecution Evidence\",\"bussiness\":\"--\",\"next_hearing_date\":\"2020-12-08T00:00:00.000Z\"},\"next_hearing_date\":\"2020-12-08\",\"hearing_date\":null,\"list_type\":\"\",\"bench_name\":\"\",\"case_stage\":\"\",\"morning_session_link\":\"\",\"action\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c309ec340c82012483\"},\"bench_number\":\"\",\"court_name\":\"\",\"cause_list_type\":\"\",\"judge_name\":\"Additional District and Sessions Judge\",\"order\":\"\",\"status\":\"\"},{\"date_of_upload\":null,\"other\":\"\",\"afternoon_session_link\":\"\",\"last_hearing_date\":\"2020-12-08\",\"sources\":[],\"purpose\":\"Prosecution Evidence\",\"link\":\"\",\"diary_note\":{\"next_purpose\":\"Prosecution Evidence\",\"bussiness\":\"--\",\"next_hearing_date\":\"2021-02-01T00:00:00.000Z\"},\"next_hearing_date\":\"2021-02-01\",\"hearing_date\":null,\"list_type\":\"\",\"bench_name\":\"\",\"case_stage\":\"\",\"morning_session_link\":\"\",\"action\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c309ec340c82012488\"},\"bench_number\":\"\",\"court_name\":\"\",\"cause_list_type\":\"\",\"judge_name\":\"Additional District and Sessions Judge\",\"order\":\"\",\"status\":\"\"},{\"date_of_upload\":null,\"other\":\"\",\"afternoon_session_link\":\"\",\"last_hearing_date\":\"2021-02-01\",\"sources\":[],\"purpose\":\"Prosecution Evidence\",\"link\":\"\",\"diary_note\":{\"next_purpose\":\"Prosecution Evidence\",\"bussiness\":\"--\",\"next_hearing_date\":\"2021-03-06T00:00:00.000Z\"},\"next_hearing_date\":\"2021-03-06\",\"hearing_date\":null,\"list_type\":\"\",\"bench_name\":\"\",\"case_stage\":\"\",\"morning_session_link\":\"\",\"action\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c309ec340c8201248c\"},\"bench_number\":\"\",\"court_name\":\"\",\"cause_list_type\":\"\",\"judge_name\":\"Additional District and Sessions Judge\",\"order\":\"\",\"status\":\"\"},{\"date_of_upload\":null,\"other\":\"\",\"afternoon_session_link\":\"\",\"last_hearing_date\":\"2021-03-06\",\"sources\":[],\"purpose\":\"Prosecution Evidence\",\"link\":\"\",\"diary_note\":{\"next_purpose\":\"Prosecution Evidence\",\"bussiness\":\"--\",\"next_hearing_date\":\"2021-05-11T00:00:00.000Z\"},\"next_hearing_date\":\"2021-05-11\",\"hearing_date\":null,\"list_type\":\"\",\"bench_name\":\"\",\"case_stage\":\"\",\"morning_session_link\":\"\",\"action\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c309ec340c82012491\"},\"bench_number\":\"\",\"court_name\":\"\",\"cause_list_type\":\"\",\"judge_name\":\"Additional District and Sessions Judge\",\"order\":\"\",\"status\":\"\"},{\"date_of_upload\":null,\"other\":\"\",\"afternoon_session_link\":\"\",\"last_hearing_date\":\"2021-05-11\",\"sources\":[],\"purpose\":\"Prosecution Evidence\",\"link\":\"\",\"diary_note\":{\"next_purpose\":\"Prosecution Evidence\",\"bussiness\":\"Adjourned due to covid\",\"next_hearing_date\":\"2021-08-11T00:00:00.000Z\"},\"next_hearing_date\":\"2021-08-11\",\"hearing_date\":null,\"list_type\":\"\",\"bench_name\":\"\",\"case_stage\":\"\",\"morning_session_link\":\"\",\"action\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c309ec340c82012496\"},\"bench_number\":\"\",\"court_name\":\"\",\"cause_list_type\":\"\",\"judge_name\":\"Additional District and Sessions Judge\",\"order\":\"\",\"status\":\"\"},{\"date_of_upload\":null,\"other\":\"\",\"afternoon_session_link\":\"\",\"last_hearing_date\":\"2021-08-11\",\"sources\":[],\"purpose\":\"Prosecution Evidence\",\"link\":\"\",\"diary_note\":{\"next_purpose\":\"Prosecution Evidence\",\"bussiness\":\"Adjourned due to covid.\",\"next_hearing_date\":\"2021-11-23T00:00:00.000Z\"},\"next_hearing_date\":\"2021-11-23\",\"hearing_date\":null,\"list_type\":\"\",\"bench_name\":\"\",\"case_stage\":\"\",\"morning_session_link\":\"\",\"action\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c309ec340c8201249d\"},\"bench_number\":\"\",\"court_name\":\"\",\"cause_list_type\":\"\",\"judge_name\":\"Additional District and Sessions Judge\",\"order\":\"\",\"status\":\"\"},{\"date_of_upload\":null,\"other\":\"\",\"afternoon_session_link\":\"\",\"last_hearing_date\":\"2021-11-23\",\"sources\":[],\"purpose\":\"Prosecution Evidence\",\"link\":\"\",\"diary_note\":{\"next_purpose\":\"Prosecution Evidence\",\"bussiness\":\"Officer is away to hold circuit bench\",\"next_hearing_date\":\"2022-01-18T00:00:00.000Z\"},\"next_hearing_date\":\"2022-01-18\",\"hearing_date\":null,\"list_type\":\"\",\"bench_name\":\"\",\"case_stage\":\"\",\"morning_session_link\":\"\",\"action\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c409ec340c820124a3\"},\"bench_number\":\"\",\"court_name\":\"\",\"cause_list_type\":\"\",\"judge_name\":\"Additional District and Sessions Judge\",\"order\":\"\",\"status\":\"\"},{\"date_of_upload\":null,\"other\":\"\",\"afternoon_session_link\":\"\",\"last_hearing_date\":\"2022-01-18\",\"sources\":[],\"purpose\":\"Prosecution Evidence\",\"link\":\"\",\"diary_note\":{\"next_purpose\":\"Prosecution Evidence\",\"bussiness\":\"Officer is holding circuit bench at Ferozepur\",\"next_hearing_date\":\"2022-04-19T00:00:00.000Z\"},\"next_hearing_date\":\"2022-04-19\",\"hearing_date\":null,\"list_type\":\"\",\"bench_name\":\"\",\"case_stage\":\"\",\"morning_session_link\":\"\",\"action\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c409ec340c820124ab\"},\"bench_number\":\"\",\"court_name\":\"\",\"cause_list_type\":\"\",\"judge_name\":\"Additional District and Sessions Judge\",\"order\":\"\",\"status\":\"\"},{\"date_of_upload\":null,\"other\":\"\",\"afternoon_session_link\":\"\",\"last_hearing_date\":\"2022-04-19\",\"sources\":[],\"purpose\":\"Prosecution Evidence\",\"link\":\"\",\"diary_note\":{\"next_purpose\":\"Prosecution Evidence\",\"bussiness\":\"--\",\"next_hearing_date\":\"2022-08-18T00:00:00.000Z\"},\"next_hearing_date\":\"2022-08-18\",\"hearing_date\":null,\"list_type\":\"\",\"bench_name\":\"\",\"case_stage\":\"\",\"morning_session_link\":\"\",\"action\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c409ec340c820124b2\"},\"bench_number\":\"\",\"court_name\":\"\",\"cause_list_type\":\"\",\"judge_name\":\"Additional District and Sessions Judge\",\"order\":\"\",\"status\":\"\"},{\"date_of_upload\":null,\"other\":\"\",\"afternoon_session_link\":\"\",\"last_hearing_date\":\"2022-08-18\",\"sources\":[],\"purpose\":\"Prosecution Evidence\",\"link\":\"\",\"diary_note\":{\"next_purpose\":\"Prosecution Evidence\",\"bussiness\":\"--\",\"next_hearing_date\":\"2022-10-20T00:00:00.000Z\"},\"next_hearing_date\":\"2022-10-20\",\"hearing_date\":null,\"list_type\":\"\",\"bench_name\":\"\",\"case_stage\":\"\",\"morning_session_link\":\"\",\"action\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c409ec340c820124b8\"},\"bench_number\":\"\",\"court_name\":\"\",\"cause_list_type\":\"\",\"judge_name\":\"Additional District and Sessions Judge\",\"order\":\"\",\"status\":\"\"},{\"date_of_upload\":null,\"other\":\"\",\"afternoon_session_link\":\"\",\"last_hearing_date\":\"2022-10-20\",\"sources\":[],\"purpose\":\"Prosecution Evidence\",\"link\":\"\",\"diary_note\":{\"next_purpose\":\"Prosecution Evidence\",\"bussiness\":\"--\",\"next_hearing_date\":\"2022-12-23T00:00:00.000Z\"},\"next_hearing_date\":\"2022-12-23\",\"hearing_date\":null,\"list_type\":\"\",\"bench_name\":\"\",\"case_stage\":\"\",\"morning_session_link\":\"\",\"action\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"63c066c409ec340c820124ba\"},\"bench_number\":\"\",\"court_name\":\"\",\"cause_list_type\":\"\",\"judge_name\":\"Additional District and Sessions Judge\",\"order\":\"\",\"status\":\"\"},{\"date_of_upload\":null,\"other\":\"\",\"afternoon_session_link\":\"\",\"last_hearing_date\":\"2022-12-23\",\"sources\":[],\"purpose\":\"Prosecution Evidence\",\"link\":\"\",\"diary_note\":{\"next_purpose\":\"Prosecution Evidence\",\"bussiness\":\"PROSECUTION EVIDENCE\",\"next_hearing_date\":\"2023-03-29T00:00:00.000Z\"},\"next_hearing_date\":\"2023-03-29\",\"hearing_date\":null,\"list_type\":\"\",\"bench_name\":\"\",\"case_stage\":\"\",\"morning_session_link\":\"\",\"action\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"65276c7d09ec342bbe0d0ac5\"},\"bench_number\":\"\",\"court_name\":\"\",\"cause_list_type\":\"\",\"judge_name\":\"Additional District and Sessions Judge\",\"order\":\"\",\"status\":\"\"},{\"date_of_upload\":null,\"other\":\"\",\"afternoon_session_link\":\"\",\"last_hearing_date\":\"2023-03-29\",\"sources\":[],\"purpose\":\"Prosecution Evidence\",\"link\":\"\",\"diary_note\":{\"next_purpose\":\"Prosecution Evidence\",\"bussiness\":\"--\",\"next_hearing_date\":\"2023-08-23T00:00:00.000Z\"},\"next_hearing_date\":\"2023-08-23\",\"hearing_date\":null,\"list_type\":\"\",\"bench_name\":\"\",\"case_stage\":\"\",\"morning_session_link\":\"\",\"action\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"65276c7e09ec342bbe0d0ac6\"},\"bench_number\":\"\",\"court_name\":\"\",\"cause_list_type\":\"\",\"judge_name\":\"Additional District and Sessions Judge\",\"order\":\"\",\"status\":\"\"},{\"date_of_upload\":null,\"other\":\"\",\"afternoon_session_link\":\"\",\"last_hearing_date\":\"2023-08-23\",\"sources\":[],\"purpose\":\"Disposed\",\"link\":\"\",\"diary_note\":{\"disposal_date\":\"2023-08-23T00:00:00.000Z\",\"bussiness\":\"--\",\"nature_of_disposal\":\"PROCEEDINGS DROPPED/ABATED\"},\"next_hearing_date\":null,\"hearing_date\":null,\"list_type\":\"\",\"bench_name\":\"\",\"case_stage\":\"\",\"morning_session_link\":\"\",\"action\":\"\",\"case_number\":\"\",\"_id\":{\"$oid\":\"65276c7e09ec342bbe0d0ac7\"},\"bench_number\":\"\",\"court_name\":\"\",\"cause_list_type\":\"\",\"judge_name\":\"Additional District and Sessions Judge\",\"order\":\"\",\"status\":\"\"}],\"respondents\":[{\"address\":\"1) INDERJIT SINGH\",\"name\":\"INDERJIT SINGH\",\"_id\":{\"$oid\":\"63c066c209ec340c82012464\"},\"advocate\":\"\",\"respondent_advocate\":\"\"}],\"respondent_advocates\":[{\"code\":\"\",\"name\":\"\",\"_id\":{\"$oid\":\"63c066c209ec340c82012468\"}}],\"drt_detail\":\"\",\"main_diary_number\":\"\",\"other_diary_number\":\"\",\"main_case_number\":\"\",\"other_case_number\":\"\",\"fir_details\":[{\"number\":\"12\",\"year\":\"2019\",\"district\":\"\",\"police_station\":\"Police Station Sadar Patti\",\"_id\":{\"$oid\":\"65276c7e09ec342bbe0d0ac8\"},\"place\":\"\"}]}",
+  "case_no": "688/2019",
+  "cnr_number": "PBTT010070692019",
+  "filing_number": "5701/2019",
+  "case_title": null,
+  "petitioners": [
+    "STATE"
+  ],
+  "respondents": [
+    "INDERJIT SINGH"
+  ],
+  "documents": [
+    {
+      "storage_id": "ecourts/PBTT010070692019/order_judgement/2019-12-21.pdf",
+      "order_date": "2019-12-21",
+      "order_number": "1",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/PBTT010070692019/order_judgement/2020-01-16.pdf",
+      "order_date": "2020-01-16",
+      "order_number": "2",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/PBTT010070692019/order_judgement/2020-03-19.pdf",
+      "order_date": "2020-03-19",
+      "order_number": "3",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/PBTT010070692019/order_judgement/2020-05-21.pdf",
+      "order_date": "2020-05-21",
+      "order_number": "4",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/PBTT010070692019/order_judgement/2020-07-13.pdf",
+      "order_date": "2020-07-13",
+      "order_number": "5",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/PBTT010070692019/order_judgement/2020-09-08.pdf",
+      "order_date": "2020-09-08",
+      "order_number": "6",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/PBTT010070692019/order_judgement/2020-10-22.pdf",
+      "order_date": "2020-10-22",
+      "order_number": "7",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/PBTT010070692019/order_judgement/2020-12-08.pdf",
+      "order_date": "2020-12-08",
+      "order_number": "8",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/PBTT010070692019/order_judgement/2021-02-01.pdf",
+      "order_date": "2021-02-01",
+      "order_number": "9",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/PBTT010070692019/order_judgement/2021-03-06.pdf",
+      "order_date": "2021-03-06",
+      "order_number": "10",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/PBTT010070692019/order_judgement/2021-05-11.pdf",
+      "order_date": "2021-05-11",
+      "order_number": "11",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/PBTT010070692019/order_judgement/2021-08-11.pdf",
+      "order_date": "2021-08-11",
+      "order_number": "12",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/PBTT010070692019/order_judgement/2021-11-23.pdf",
+      "order_date": "2021-11-23",
+      "order_number": "13",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/PBTT010070692019/order_judgement/2022-01-18.pdf",
+      "order_date": "2022-01-18",
+      "order_number": "14",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/PBTT010070692019/order_judgement/2022-04-19.pdf",
+      "order_date": "2022-04-19",
+      "order_number": "15",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/PBTT010070692019/order_judgement/2022-08-18.pdf",
+      "order_date": "2022-08-18",
+      "order_number": "16",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/PBTT010070692019/order_judgement/2022-10-20.pdf",
+      "order_date": "2022-10-20",
+      "order_number": "17",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    }
+  ]
+}

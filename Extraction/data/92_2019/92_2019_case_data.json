@@ -1,0 +1,74 @@
+{
+  "csp_id": "2467f95a36bda10ba4d911af8b7de9021889b57e7736a18fc97073ddf06a9934",
+  "court": "ecourts_district_court",
+  "case_type": "exe",
+  "case_status": "disposed",
+  "filing_year": "2019",
+  "district": "fatehgarh sahib",
+  "state": "punjab",
+  "updated_at": "2025-09-09T00:00:00Z",
+  "es_doc_id": "5dda7e70434ec001c8108fc2",
+  "es_index": "ecourt_district_court_year_2019_to_2020",
+  "raw_details": "{\"action\":\"\",\"acts\":[{\"_id\":{\"$oid\":\"5dda7e74434ec001c8108ff5\"},\"name\":\"Code of Civil Procedure\",\"section\":\"Execution\"}],\"alert_msg\":\"{}\",\"appeal_number\":\"\",\"archive\":\"Y\",\"assesment_year\":\"\",\"bench\":\"Not Found\",\"bench_alloted\":\"\",\"bench_nature\":\"\",\"case_bench\":\"\",\"case_code\":\"201200000922019\",\"case_history\":[{\"_id\":{\"$oid\":\"5dda7e75434ec001c8108ffc\"},\"action\":\"\",\"bench_name\":\"\",\"bench_number\":\"\",\"case_number\":\"\",\"case_stage\":\"\",\"cause_list_type\":\"\",\"court_name\":\"\",\"date_of_upload\":null,\"diary_note\":{\"bussiness\":\"Be Registered. Report of Ahlmad for 25.07.2019\",\"next_purpose\":\"Appereance\",\"next_hearing_date\":\"2019-07-25T00:00:00.000Z\"},\"hearing_date\":null,\"judge_name\":\"Civil Judge (Senior Division)\",\"last_hearing_date\":\"2019-07-16\",\"link\":\"\",\"list_type\":\"\",\"next_hearing_date\":\"2019-07-25\",\"order\":\"\",\"other\":\"\",\"purpose\":\"Appereance\",\"sources\":[],\"status\":\"\"},{\"_id\":{\"$oid\":\"5dda7e76434ec001c8109007\"},\"action\":\"\",\"bench_name\":\"\",\"bench_number\":\"\",\"case_number\":\"\",\"case_stage\":\"\",\"cause_list_type\":\"\",\"court_name\":\"\",\"date_of_upload\":null,\"diary_note\":{\"presentee\":\"State Bank of IndiaBhushan Lal GuptaGURDEEP SINGHHarvinder Kaur\",\"bussiness\":\"woa be issued for 24-10-2019\",\"next_purpose\":\"Appereance\",\"next_hearing_date\":\"2019-10-24T00:00:00.000Z\"},\"hearing_date\":null,\"judge_name\":\"Civil Judge (Senior Division)\",\"last_hearing_date\":\"2019-07-25\",\"link\":\"\",\"list_type\":\"\",\"next_hearing_date\":\"2019-10-24\",\"order\":\"\",\"other\":\"\",\"purpose\":\"Appereance\",\"sources\":[],\"status\":\"\"},{\"_id\":{\"$oid\":\"5dda7e77434ec001c8109014\"},\"action\":\"\",\"bench_name\":\"\",\"bench_number\":\"\",\"case_number\":\"\",\"case_stage\":\"\",\"cause_list_type\":\"\",\"court_name\":\"\",\"date_of_upload\":null,\"diary_note\":{\"bussiness\":\"file taken up today as i shall on leave . now case adjourned to the date fixed for further proceeding\",\"next_purpose\":\"Appereance\",\"next_hearing_date\":\"2019-10-29T00:00:00.000Z\"},\"hearing_date\":null,\"judge_name\":\"Civil Judge (Senior Division)\",\"last_hearing_date\":\"2019-10-24\",\"link\":\"\",\"list_type\":\"\",\"next_hearing_date\":\"2019-10-29\",\"order\":\"\",\"other\":\"\",\"purpose\":\"Appereance\",\"sources\":[],\"status\":\"\"},{\"_id\":{\"$oid\":\"5dda7e78434ec001c8109023\"},\"action\":\"\",\"bench_name\":\"\",\"bench_number\":\"\",\"case_number\":\"\",\"case_stage\":\"\",\"cause_list_type\":\"\",\"court_name\":\"\",\"date_of_upload\":null,\"diary_note\":{\"presentee\":\"State Bank of IndiaBhushan Lal GuptaGURDEEP SINGHHarvinder Kaur\",\"bussiness\":\"case adjourned to the date fixed fro further proceeding for 03-12-2019\",\"next_purpose\":\"Appereance\",\"next_hearing_date\":\"2019-12-03T00:00:00.000Z\"},\"hearing_date\":null,\"judge_name\":\"Civil Judge (Senior Division)\",\"last_hearing_date\":\"2019-10-29\",\"link\":\"\",\"list_type\":\"\",\"next_hearing_date\":\"2019-12-03\",\"order\":\"\",\"other\":\"\",\"purpose\":\"Appereance\",\"sources\":[],\"status\":\"\"},{\"_id\":{\"$oid\":\"5ded32d9434ec06408a3471b\"},\"action\":\"\",\"bench_name\":\"\",\"bench_number\":\"\",\"case_number\":\"\",\"case_stage\":\"\",\"cause_list_type\":\"\",\"court_name\":\"\",\"date_of_upload\":null,\"diary_note\":{\"presentee\":\"State Bank of IndiaBhushan Lal GuptaGURDEEP SINGHHarvinder Kaur\",\"bussiness\":\"fresh notice be issued for 20-01-2020\",\"next_purpose\":\"Appereance\",\"next_hearing_date\":\"2020-01-20T00:00:00.000Z\"},\"hearing_date\":null,\"judge_name\":\"Civil Judge (Senior Division)\",\"last_hearing_date\":\"2019-12-03\",\"link\":\"\",\"list_type\":\"\",\"next_hearing_date\":\"2020-01-20\",\"order\":\"\",\"other\":\"\",\"purpose\":\"Appereance\",\"sources\":[],\"status\":\"\"},{\"_id\":{\"$oid\":\"5f40c73309ec340f5e838b8d\"},\"action\":\"\",\"bench_name\":\"\",\"bench_number\":\"\",\"case_number\":\"\",\"case_stage\":\"\",\"cause_list_type\":\"\",\"court_name\":\"\",\"date_of_upload\":null,\"diary_note\":{\"presentee\":\"State Bank of IndiaBhushan Lal GuptaGURDEEP SINGHHarvinder Kaur\",\"bussiness\":\"daw\",\"nature_of_disposal\":\"DISMISSED AS WITHDRAWN\",\"disposal_date\":\"2020-01-20T00:00:00.000Z\"},\"hearing_date\":null,\"judge_name\":\"Civil Judge (Senior Division)\",\"last_hearing_date\":\"2020-01-20\",\"link\":\"\",\"list_type\":\"\",\"next_hearing_date\":null,\"order\":\"\",\"other\":\"\",\"purpose\":\"Disposed\",\"sources\":[],\"status\":\"\"}],\"case_number\":\"92/2019\",\"case_stage\":\"Appereance \",\"case_status\":\"Disposed\",\"case_type\":\"\",\"case_type_code\":\"EXE\",\"case_year\":\"2019\",\"caseidin\":null,\"category\":\"\",\"cause_list_name\":\"\",\"caveat_number\":\"\",\"classification_number\":\"\",\"cnr_number\":\"PBFG020009822019\",\"company_appeal_number\":\"\",\"coram\":\"\",\"court\":\"Civil Courts, Fatehgarh Sahib\",\"court_code\":\"\",\"court_number\":\"4\",\"crawler_source\":\"mobile\",\"created_at\":\"2019-11-24T12:58:24.871Z\",\"csp_attrs\":\"ecourts_district_court~||~PBFG020009822019\",\"csp_id\":\"2467f95a36bda10ba4d911af8b7de9021889b57e7736a18fc97073ddf06a9934\",\"current_position\":\"\",\"da_name\":\"\",\"date_of_destruction\":null,\"decision_date\":\"2020-01-20\",\"dfr_number\":\"\",\"dfr_year\":\"\",\"diary_number\":\"\",\"diary_year\":\"\",\"disposal_date\":null,\"district\":\"Fatehgarh Sahib\",\"district_code\":\"\",\"error_msg\":\"{}\",\"establishment_code\":\"\",\"filing_date\":\"2019-07-16\",\"filing_number\":\"1061/2019\",\"filing_year\":\"2019\",\"final_hearing_date\":null,\"first_entry_clerk\":\"\",\"first_hearing_date\":\"2019-07-16\",\"forum\":\"\",\"impugn_date\":null,\"impugn_number\":\"\",\"impugn_type\":\"\",\"in_favour_of\":null,\"is_dirty\":false,\"is_migrated\":false,\"is_reindexed\":false,\"judgement\":\"\",\"judicial\":\"\",\"last_hearing_date\":\"2020-01-20\",\"last_order\":null,\"last_posted_for\":\"\",\"list_type\":\"\",\"lodging_number\":\"\",\"main_case_detail\":\"\",\"main_matter\":\"\",\"main_matter_lodging_number\":\"\",\"main_matter_registration_number\":\"\",\"main_matter_stamp_number\":\"\",\"manual_petitioner\":\"\",\"manual_respondent\":\"\",\"manually_inserted\":false,\"migration_params\":{},\"multiple_cases\":\"\",\"next_hearing_date\":\"2020-01-20\",\"next_listing_purpose\":\"\",\"order\":\"\",\"order_date\":null,\"order_details\":[{\"_id\":{\"$oid\":\"5f40c73309ec340f5e838b90\"},\"case_number\":\"\",\"court_name\":\"\",\"data\":null,\"judge\":\"\",\"order_date\":\"2020-01-20\",\"order_detail_link\":\"\",\"order_number\":\"6\",\"order_type\":\"order/judgement\",\"petitioner_name\":\"\",\"pronounced_date\":null,\"purpose\":\"\",\"respondent_name\":\"\",\"result\":\"\",\"section\":\"\",\"status\":\"\",\"storage_id\":\"ecourts/PBFG020009822019/order_judgement/2020-01-20.pdf\",\"tags\":\"\"},{\"_id\":{\"$oid\":\"5f40c73309ec340f5e838b91\"},\"case_number\":\"\",\"court_name\":\"\",\"data\":null,\"judge\":\"\",\"order_date\":\"2019-07-16\",\"order_detail_link\":\"\",\"order_number\":\"1\",\"order_type\":\"order/judgement\",\"petitioner_name\":\"\",\"pronounced_date\":null,\"purpose\":\"\",\"respondent_name\":\"\",\"result\":\"\",\"section\":\"\",\"status\":\"\",\"storage_id\":\"ecourts/PBFG020009822019/order_judgement/2019-07-16.pdf\",\"tags\":\"\"},{\"_id\":{\"$oid\":\"5f40c73309ec340f5e838b92\"},\"case_number\":\"\",\"court_name\":\"\",\"data\":null,\"judge\":\"\",\"order_date\":\"2019-07-25\",\"order_detail_link\":\"\",\"order_number\":\"2\",\"order_type\":\"order/judgement\",\"petitioner_name\":\"\",\"pronounced_date\":null,\"purpose\":\"\",\"respondent_name\":\"\",\"result\":\"\",\"section\":\"\",\"status\":\"\",\"storage_id\":\"ecourts/PBFG020009822019/order_judgement/2019-07-25.pdf\",\"tags\":\"\"},{\"_id\":{\"$oid\":\"5f40c73409ec340f5e838b93\"},\"case_number\":\"\",\"court_name\":\"\",\"data\":null,\"judge\":\"\",\"order_date\":\"2019-10-24\",\"order_detail_link\":\"\",\"order_number\":\"3\",\"order_type\":\"order/judgement\",\"petitioner_name\":\"\",\"pronounced_date\":null,\"purpose\":\"\",\"respondent_name\":\"\",\"result\":\"\",\"section\":\"\",\"status\":\"\",\"storage_id\":\"ecourts/PBFG020009822019/order_judgement/2019-10-24.pdf\",\"tags\":\"\"},{\"_id\":{\"$oid\":\"5f40c73409ec340f5e838b94\"},\"case_number\":\"\",\"court_name\":\"\",\"data\":null,\"judge\":\"\",\"order_date\":\"2019-10-29\",\"order_detail_link\":\"\",\"order_number\":\"4\",\"order_type\":\"order/judgement\",\"petitioner_name\":\"\",\"pronounced_date\":null,\"purpose\":\"\",\"respondent_name\":\"\",\"result\":\"\",\"section\":\"\",\"status\":\"\",\"storage_id\":\"ecourts/PBFG020009822019/order_judgement/2019-10-29.pdf\",\"tags\":\"\"},{\"_id\":{\"$oid\":\"5f40c73409ec340f5e838b95\"},\"case_number\":\"\",\"court_name\":\"\",\"data\":null,\"judge\":\"\",\"order_date\":\"2019-12-03\",\"order_detail_link\":\"\",\"order_number\":\"5\",\"order_type\":\"order/judgement\",\"petitioner_name\":\"\",\"pronounced_date\":null,\"purpose\":\"\",\"respondent_name\":\"\",\"result\":\"\",\"section\":\"\",\"status\":\"\",\"storage_id\":\"ecourts/PBFG020009822019/order_judgement/2019-12-03.pdf\",\"tags\":\"\"}],\"order_judgement_storage_id\":\"\",\"order_number\":\"\",\"order_result\":\"\",\"params_id\":null,\"petitioner_advocates\":[{\"_id\":{\"$oid\":\"5dda7e73434ec001c8108fe6\"},\"code\":\"\",\"name\":\"Bhushan Lal Gupta\"}],\"petitioners\":[{\"_id\":{\"$oid\":\"5dda7e72434ec001c8108fd7\"},\"address\":\"1) State Bank of India Advocate - Bhushan Lal Gupta\",\"advocate\":\"\",\"name\":\"State Bank of India\",\"petitioner_advocate\":\"\"}],\"presentation_date\":null,\"presented_by\":\"\",\"pronouncement_date\":null,\"purpose\":\"\",\"rbt_details\":\"\",\"registration_date\":\"2019-07-16\",\"registration_number\":\"92/2019\",\"registration_year\":\"2019\",\"respondent_advocates\":[{\"_id\":{\"$oid\":\"5dda7e74434ec001c8108fee\"},\"code\":\"\",\"name\":\"\"}],\"respondents\":[{\"_id\":{\"$oid\":\"5dda7e72434ec001c8108fdb\"},\"address\":\"1) GURDEEP SINGH\",\"advocate\":\"\",\"name\":\"GURDEEP SINGH\",\"respondent_advocate\":\"\"},{\"_id\":{\"$oid\":\"5dda7e73434ec001c8108fe1\"},\"address\":\"\",\"advocate\":\"\",\"name\":\"Harvinder Kaur\",\"respondent_advocate\":\"\"}],\"search_by\":\"\",\"short_order\":\"\",\"side\":\"\",\"source\":\"ecourts_district_court\",\"stamp_number\":\"\",\"state\":\"punjab\",\"state_code\":\"\",\"statutory_info\":\"\",\"storage_id\":\"\",\"tentative_date\":null,\"tribunal_date\":null,\"tribunal_order_link\":\"\",\"type_of_disposal\":\"34\",\"u_section\":\"\",\"update_on\":null,\"updated_at\":\"2020-08-22T07:20:19.616Z\",\"updated_csp\":null}",
+  "case_no": "92/2019",
+  "cnr_number": "PBFG020009822019",
+  "filing_number": "1061/2019",
+  "case_title": null,
+  "petitioners": [
+    "State Bank of India"
+  ],
+  "respondents": [
+    "GURDEEP SINGH",
+    "Harvinder Kaur"
+  ],
+  "documents": [
+    {
+      "storage_id": "ecourts/PBFG020009822019/order_judgement/2020-01-20.pdf",
+      "order_date": "2020-01-20",
+      "order_number": "6",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/PBFG020009822019/order_judgement/2019-07-16.pdf",
+      "order_date": "2019-07-16",
+      "order_number": "1",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/PBFG020009822019/order_judgement/2019-07-25.pdf",
+      "order_date": "2019-07-25",
+      "order_number": "2",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/PBFG020009822019/order_judgement/2019-10-24.pdf",
+      "order_date": "2019-10-24",
+      "order_number": "3",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/PBFG020009822019/order_judgement/2019-10-29.pdf",
+      "order_date": "2019-10-29",
+      "order_number": "4",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    },
+    {
+      "storage_id": "ecourts/PBFG020009822019/order_judgement/2019-12-03.pdf",
+      "order_date": "2019-12-03",
+      "order_number": "5",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "csp_id": "fb173dc1afb35f0fb62dd1deba208a7a369f606ae2eeb91bdc3dc770e00df278",
+  "court": "ecourts_district_court",
+  "case_type": "cc",
+  "case_status": "disposed",
+  "filing_year": "2020",
+  "district": "krishna",
+  "state": "andhra pradesh",
+  "updated_at": "2025-09-09T00:00:00Z",
+  "es_doc_id": "614ea0e409ec346ccf090cd5",
+  "es_index": "ecourt_district_court_year_2019_to_2020",
+  "raw_details": "{\"action\":\"\",\"acts\":[{\"_id\":{\"$oid\":\"614ea0e409ec346ccf090cdc\"},\"name\":\"NEGOTIABLE INSTRUMENTS ACT, 1881\",\"section\":\"138\"}],\"alert_msg\":\"{}\",\"appeal_number\":\"\",\"archive\":\"Y\",\"assesment_year\":\"\",\"bench\":\"Not Found\",\"bench_alloted\":\"\",\"bench_nature\":\"\",\"case_bench\":\"\",\"case_code\":\"202100000772020\",\"case_history\":[{\"_id\":{\"$oid\":\"614ea0e409ec346ccf090cdd\"},\"action\":\"\",\"afternoon_session_link\":\"\",\"bench_name\":\"\",\"bench_number\":\"\",\"case_number\":\"\",\"case_stage\":\"\",\"cause_list_type\":\"\",\"court_name\":\"\",\"date_of_upload\":null,\"diary_note\":{\"bussiness\":\"Complainant is present. Accused is absent. As per decision reported in Y.P.Bijju Vs ST of Kerala and others 2008, Crl.L.J.928, case is compounded in the absence of accused as per the compromise arrived before Lok adalat. Hence, the accused is acquitted u/s. 147 of NI Act.\",\"nature_of_disposal\":\"SETTLED BEFORE LOK ADALAT\",\"disposal_date\":\"2020-12-12T00:00:00.000Z\"},\"hearing_date\":null,\"judge_name\":\"V Addl Senior Civil Judge cum VI ACMM Vijayawada\",\"last_hearing_date\":\"2020-12-12\",\"link\":\"\",\"list_type\":\"\",\"morning_session_link\":\"\",\"next_hearing_date\":null,\"order\":\"\",\"other\":\"\",\"purpose\":\"Disposed\",\"sources\":[],\"status\":\"\"}],\"case_number\":\"77/2020\",\"case_stage\":\"SUMMONS \",\"case_status\":\"Disposed\",\"case_type\":\"CC\",\"case_type_code\":\"CC\",\"case_year\":\"2020\",\"caseidin\":null,\"category\":\"\",\"cause_list_name\":\"\",\"caveat_number\":\"\",\"classification_number\":\"\",\"cnr_number\":\"APKR040003682020\",\"company_appeal_number\":\"\",\"coram\":\"\",\"court\":\"Principal  Senior Civil Court, Vijayawada\",\"court_code\":\"\",\"court_number\":\"6\",\"crawler_source\":\"mobile\",\"created_at\":\"2021-09-25T04:09:08.846Z\",\"csp_attrs\":\"ecourts_district_court~||~APKR040003682020\",\"csp_id\":\"fb173dc1afb35f0fb62dd1deba208a7a369f606ae2eeb91bdc3dc770e00df278\",\"current_position\":\"\",\"da_name\":\"\",\"date_of_destruction\":null,\"decision_date\":\"2020-12-12\",\"dfr_number\":\"\",\"dfr_year\":\"\",\"diary_number\":\"\",\"diary_year\":\"\",\"disposal_date\":null,\"district\":\"Krishna\",\"district_code\":\"\",\"error_msg\":\"{}\",\"establishment_code\":\"\",\"facts\":null,\"filing_date\":\"2020-10-21\",\"filing_number\":\"77/2020\",\"filing_year\":\"2020\",\"final_hearing_date\":null,\"first_entry_clerk\":\"\",\"first_hearing_date\":\"2020-12-12\",\"forum\":\"\",\"impugn_date\":null,\"impugn_number\":\"\",\"impugn_type\":\"\",\"in_favour_of\":null,\"is_dirty\":false,\"is_migrated\":false,\"is_reindexed\":false,\"issues\":null,\"judgement\":\"\",\"judgement_appealed\":null,\"judgement_appealed_storage_id\":null,\"judgement_page\":null,\"judgement_page_bailii\":null,\"judgement_page_bailii_storage_id\":null,\"judgement_page_storage_id\":null,\"judicial\":\"\",\"last_hearing_date\":\"2020-12-12\",\"last_order\":null,\"last_posted_for\":\"\",\"list_type\":\"\",\"lodging_number\":\"\",\"main_case_detail\":\"\",\"main_matter\":\"\",\"main_matter_lodging_number\":\"\",\"main_matter_registration_number\":\"\",\"main_matter_stamp_number\":\"\",\"manual_petitioner\":\"\",\"manual_respondent\":\"\",\"manually_inserted\":false,\"migration_params\":{},\"multiple_cases\":\"\",\"neutral_citation\":null,\"next_hearing_date\":\"2020-12-12\",\"next_listing_purpose\":\"\",\"order\":\"\",\"order_date\":null,\"order_details\":[{\"_id\":{\"$oid\":\"626139b209ec343820ae295f\"},\"afternoon_session_link\":\"\",\"case_number\":\"\",\"court_name\":\"\",\"data\":\"\",\"judge\":\"\",\"morning_session_link\":\"\",\"order_date\":\"2020-12-12\",\"order_detail_link\":\"\",\"order_number\":\"1\",\"order_type\":\"order/judgement\",\"petitioner_name\":\"\",\"pronounced_date\":null,\"purpose\":\"\",\"respondent_name\":\"\",\"result\":\"\",\"section\":\"\",\"status\":\"\",\"storage_id\":\"ecourts/APKR040003682020/order_judgement/2020-12-12.pdf\",\"tags\":\"\"}],\"order_judgement_storage_id\":\"\",\"order_number\":\"\",\"order_result\":\"\",\"params_id\":null,\"petitioner_advocates\":[{\"_id\":{\"$oid\":\"614ea0e409ec346ccf090cda\"},\"code\":\"\",\"name\":\"NAGAVARAPU UMA MAHESH\"}],\"petitioners\":[{\"_id\":{\"$oid\":\"614ea0e409ec346ccf090cd8\"},\"address\":\"1) Ms Tata Capital Finance Services Ltd, Rep by Mr. Balaji Singh Naik Advocate - NAGAVARAPU UMA MAHESH\",\"advocate\":\"\",\"name\":\"Ms Tata Capital Finance Services Ltd, Rep by Mr. Balaji Singh Naik\",\"petitioner_advocate\":\"\"}],\"presentation_date\":null,\"presented_by\":\"\",\"press_summary\":null,\"press_summary_storage_id\":null,\"pronouncement_date\":null,\"purpose\":\"\",\"rbt_details\":\"\",\"registration_date\":\"2020-10-21\",\"registration_number\":\"77/2020\",\"registration_year\":\"2020\",\"reporting_restrictions\":null,\"respondent_advocates\":[{\"_id\":{\"$oid\":\"614ea0e409ec346ccf090cdb\"},\"code\":\"\",\"name\":\"\"}],\"respondents\":[{\"_id\":{\"$oid\":\"614ea0e409ec346ccf090cd9\"},\"address\":\"1) Meena Thomas\",\"advocate\":\"\",\"name\":\"Meena Thomas\",\"respondent_advocate\":\"\"}],\"search_by\":\"\",\"short_order\":\"\",\"side\":\"\",\"source\":\"ecourts_district_court\",\"stamp_number\":\"\",\"state\":\"andhra pradesh\",\"state_code\":\"\",\"statutory_info\":\"\",\"storage_id\":\"\",\"tentative_date\":null,\"tribunal_date\":null,\"tribunal_order_link\":\"\",\"type_of_disposal\":\"45\",\"u_section\":\"\",\"update_on\":null,\"updated_at\":\"2022-04-21T11:02:09.806Z\",\"updated_csp\":null}",
+  "case_no": "77/2020",
+  "cnr_number": "APKR040003682020",
+  "filing_number": "77/2020",
+  "case_title": null,
+  "petitioners": [
+    "Ms Tata Capital Finance Services Ltd, Rep by Mr. Balaji Singh Naik"
+  ],
+  "respondents": [
+    "Meena Thomas"
+  ],
+  "documents": [
+    {
+      "storage_id": "ecourts/APKR040003682020/order_judgement/2020-12-12.pdf",
+      "order_date": "2020-12-12",
+      "order_number": "1",
+      "order_type": "order/judgement",
+      "judge": "",
+      "purpose": ""
+    }
+  ]
+}
