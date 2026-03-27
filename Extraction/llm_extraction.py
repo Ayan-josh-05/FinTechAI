@@ -120,10 +120,17 @@ IMPORTANT RULES FOR THE SUMMARY:
   - If something is not mentioned in the data, skip it — never invent
   - Length should match complexity — brief for simple cases, detailed for complex ones. Let content decide length.
   - Do NOT use section headers inside the summary
-  - The summary should read like a dense fact sheet, not a story
-  - Do not miss any important facts.
-  - Do not hallucinate.
-  - Do not add any extra information that is not present in the PDF.
+  - Do not miss any important facts
+  - Do not hallucinate
+  - Do not add any extra information that is not present in the PDF
+
+STRUCTURE REQUIREMENT (FOR CHUNKING):
+  - The summary MUST be divided into separate paragraphs corresponding to each section: IDENTITY, TIMELINE, PARTIES, LEGAL, FINANCIAL, ASSETS, and PROCEEDINGS.
+  - Each section should be written as ONE dense paragraph.
+  - Maintain the SAME ORDER of sections as defined above.
+  - Do NOT explicitly write section titles (like "IDENTITY:", "TIMELINE:").
+  - Ensure clear paragraph breaks between sections so that each paragraph can be used as an independent chunk in a RAG pipeline.
+  - Each paragraph must still follow natural flowing sentences and contain complete information for that section.
 
 ═══════════════════════════════════════════════════════════════
 C. TARGET FIELDS FOR EXTRACTION

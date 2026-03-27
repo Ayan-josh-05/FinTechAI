@@ -82,13 +82,13 @@ def upsert_court(tx, case) -> str | None:
         return None
     r = tx.run("""
         MERGE (c:Court {name: $name})
-        ON CREATE SET c.id = $id, c.court_type = $ct, c.court_number = $cn,
+        ON CREATE SET c.id = $id, c.court_type = $ct, c.court_code = $cc,
                       c.district = $dist, c.state = $state,
                       c.created_at = datetime()
-        ON MATCH  SET c.court_number = $cn, c.updated_at = datetime()
+        ON MATCH  SET c.court_code = $cc, c.updated_at = datetime()
         RETURN c.id AS id""",
         name=case.court_name, id=str(uuid.uuid4()), ct=case.court_type,
-        cn=case.court_number, dist=case.district, state=case.state)
+        cc=case.court_number, dist=case.district, state=case.state)
     return r.single()['id']
 
 
@@ -249,14 +249,13 @@ def upsert_judge(
 
 def upsert_case(tx, case, court_id: str | None, outer: dict, summary=None, case_updates=None) -> str:
     r = tx.run("""
-        MERGE (c:Case {cnr: $cnr})
+        MERGE (c:Case {cnr_number: $cnr})
         ON CREATE SET
-            c.id = $id, c.csp_id = $csp_id, c.case_number = $case_number,
+            c.id = $id, c.case_number = $case_number,
             c.filing_number = $filing_number,
             c.registration_number = $reg_num,
-            c.case_type = $case_type, c.case_type_code = $case_type_code,
-            c.status = $status, c.case_stage = $case_stage,
-            c.court_number = $court_number,
+            c.case_type = $case_type,
+            c.status = $status, c.stage = $stage,
             c.district = $district, c.state = $state,
             c.filing_date = $filing_date,
             c.registration_date = $registration_date,
@@ -268,7 +267,6 @@ def upsert_case(tx, case, court_id: str | None, outer: dict, summary=None, case_
             c.filing_year = $filing_year,
             c.type_of_disposal = $type_of_disposal,
             c.in_favour_of = $in_favour_of,
-            c.source = $source,
             c.search_summary = $summary,
             c.created_at = datetime()
         ON MATCH SET
@@ -280,11 +278,10 @@ def upsert_case(tx, case, court_id: str | None, outer: dict, summary=None, case_
             c.updated_at = datetime()
         RETURN c.id AS id""",
         cnr=case.cnr_number, id=str(uuid.uuid4()),
-        csp_id=case.csp_id, case_number=case.case_number,
+        case_number=case.case_number,
         filing_number=case.filing_number, reg_num=case.registration_number,
-        case_type=case.case_type, case_type_code=case.case_type_code,
-        status=case.case_status, case_stage=case.case_stage,
-        court_number=case.court_number,
+        case_type=case.case_type,
+        status=case.case_status, stage=case.case_stage,
         district=case.district, state=case.state,
         filing_date=str(case.filing_date) if case.filing_date else None,
         registration_date=str(case.registration_date) if case.registration_date else None,
@@ -296,7 +293,6 @@ def upsert_case(tx, case, court_id: str | None, outer: dict, summary=None, case_
         filing_year=case.filing_year,
         type_of_disposal=case.type_of_disposal,
         in_favour_of=case.in_favour_of,
-        source=case.source,
         summary=summary,
     )
     case_id = r.single()['id']
@@ -426,21 +422,21 @@ def insert_hearings(tx, case_id: str, hearings) -> None:
             MATCH (c:Case {id: $cid})
             CREATE (h:Hearing {
                 id: $id,
+                date: $date,
                 last_hearing_date: $last,
                 next_hearing_date: $next,
-                hearing_date: $hdate,
                 purpose: $purpose,
+                next_purpose: $npurpose,
                 judge_designation: $jdesig,
                 business_notes: $notes,
-                next_purpose: $npurpose,
                 nature_of_disposal: $disposal,
                 created_at: datetime()
             })
             CREATE (c)-[:HAS_HEARING]->(h)""",
             id=str(uuid.uuid4()), cid=case_id,
+            date=str(h.hearing_date) if h.hearing_date else None,
             last=str(h.last_hearing_date) if h.last_hearing_date else None,
             next=str(h.next_hearing_date) if h.next_hearing_date else None,
-            hdate=str(h.hearing_date) if h.hearing_date else None,
             purpose=h.purpose, jdesig=h.judge_designation,
             notes=h.diary_note.business,
             npurpose=h.diary_note.next_purpose,
@@ -512,10 +508,8 @@ def insert_assets(tx, case_id: str, assets: list, doc_id_map: dict) -> None:
                 asset_type: $atype,
                 identifier: $identifier,
                 description: $desc,
-                address_text: $addr,
+                address: $addr,
                 estimated_value_inr: $value,
-                source_document_id: $src_doc,
-                extraction_confidence: $conf,
                 created_at: datetime()
             })
             CREATE (c)-[:HAS_ASSET]->(asset)""",
@@ -523,9 +517,7 @@ def insert_assets(tx, case_id: str, assets: list, doc_id_map: dict) -> None:
             identifier=a.get('identifier'),
             desc=a.get('description'),
             addr=a.get('address'),
-            value=a.get('estimated_value_inr'),
-            src_doc=src_doc,
-            conf=a.get('extraction_confidence', 0.9))
+            value=a.get('estimated_value_inr'))
 
         _set_flat_props(tx, asset_id, 'Asset', attributes)
 
