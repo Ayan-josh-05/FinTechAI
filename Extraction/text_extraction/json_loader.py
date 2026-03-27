@@ -36,7 +36,7 @@ def build_manifest(dataset_root: Path, manifest_path: Path) -> pd.DataFrame:
     Crawl *dataset_root* for JSON + PDF pairs and write/update *manifest_path*.
     Returns the manifest DataFrame (includes previously processed rows).
     """
-    logger.info(f"Starting build_manifest on {dataset_root}")
+    logger.debug(f"Starting build_manifest on {dataset_root}")
     rows = []
     for json_file in sorted(dataset_root.rglob('*.json')):
         folder  = json_file.parent
@@ -81,7 +81,7 @@ def load_json(json_path: str) -> tuple[dict, dict]:
     Load a case JSON file.
     Returns (outer_dict, raw_details_dict).
     """
-    logger.info(f"Starting load_json for {json_path}")
+    logger.debug(f"Starting load_json for {json_path}")
     with open(json_path, 'rb') as f:
         outer = orjson.loads(f.read())
     raw = orjson.loads(outer.get('raw_details', '{}'))
@@ -217,7 +217,7 @@ class CaseModel(BaseModel):
 
 def build_case_model(outer: dict, raw: dict) -> CaseModel:
     """Construct and validate a CaseModel from raw JSON dicts."""
-    logger.info("Starting build_case_model")
+    logger.debug("Starting build_case_model")
     persons = []
 
     for p in raw.get('petitioners', []):

@@ -2,3 +2,8 @@
 .env
 manifest.csv
 pipeline.log
+__pycache__/
+*.pyc
+data/
+legal_cases_export.csv
+court_case_pipeline_v3.ipynb

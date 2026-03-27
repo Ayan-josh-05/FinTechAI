@@ -25,11 +25,14 @@ logger = logging.getLogger('pipeline')
 # ── Null-safe coercion ─────────────────────────────────────────────────────
 
 def to_none(v):
-    """Return None for empty / null-like strings, otherwise return stripped string."""
+    """Return None for empty / null-like strings or placeholders."""
     if v is None:
         return None
     s = str(v).strip()
-    return None if s in ('', 'None', 'null', 'NULL', 'N/A') else s
+    low = s.lower()
+    if low in ('', 'none', 'null', 'n/a', 'not mentioned', 'not found', 'unknown', 'not mentioned in pdf', 'not mentioned in the pdf'):
+        return None
+    return s
 
 
 # ── Date parsing ───────────────────────────────────────────────────────────
@@ -191,3 +194,15 @@ def clean_district(raw: str) -> str:
     if override:
         return override
     return raw.title()
+def clean_rel_type(role: str) -> str:
+    """
+    Sanitise a role string into a Cypher-safe relationship type.
+    e.g. 'Police Sub-Inspector' -> 'POLICE_SUB_INSPECTOR_IN'
+    """
+    if not role:
+        return 'PARTY_IN'
+    # Upper case and replace non-alphanumeric with underscore
+    clean = re.sub(r'[^A-Z0-9]+', '_', role.upper())
+    # Strip leading/trailing underscores and add suffix
+    clean = clean.strip('_')
+    return f"{clean}_IN" if clean else "PARTY_IN"

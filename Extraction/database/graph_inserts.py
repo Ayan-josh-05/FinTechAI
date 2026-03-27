@@ -3,7 +3,7 @@ Labels/graph_inserts.py
 All Neo4j write helpers for the pipeline.
 
 Key design decisions:
-  - No JSONB anywhere — additional_info dicts become flat node properties
+  - No JSONB anywhere — model_fields dicts become flat node properties
     via _set_flat_props().
   - Asset attributes dict → individual properties on the Asset node.
   - ADDRESS is stored on the Person / Organization node directly
@@ -14,8 +14,9 @@ Key design decisions:
 import uuid
 import json as _json
 import logging
+from datetime import datetime
 
-from utils.helpers import normalize_name, org_type
+from utils.helpers import normalize_name, org_type, clean_rel_type
 
 logger = logging.getLogger('pipeline')
 
@@ -29,12 +30,22 @@ def _set_flat_props(tx, node_id: str, label: str, props: dict) -> None:
     Set arbitrary flat properties on a node.
     props = {'age': 45, 'occupation': 'Director', ...}
     Skips None values — only sets what we actually have.
+    Serializes dicts/lists to JSON strings as Neo4j requires flat primitives.
     Keys must come from our own code (no user-supplied keys) — safe for
     dynamic Cypher construction.
     """
     if not props:
         return
-    clean = {k: v for k, v in props.items() if v is not None}
+        
+    clean = {}
+    for k, v in props.items():
+        if v is None:
+            continue
+        if isinstance(v, (dict, list)):
+            clean[k] = _json.dumps(v, ensure_ascii=False)
+        else:
+            clean[k] = v
+            
     if not clean:
         return
     set_clause = ', '.join(f'n.{k} = ${k}' for k in clean)
@@ -83,7 +94,7 @@ def upsert_court(tx, case) -> str | None:
 
 # ══════════════════════════════════════════════════════════════════════════
 # 3. Person
-# additional_info dict keys → direct node properties
+# model_fields dict keys → direct node properties
 # address is stored as p.address on the Person node (NOT on the relationship)
 # ══════════════════════════════════════════════════════════════════════════
 
@@ -91,7 +102,7 @@ def insert_person(
     tx,
     name: str,
     name_source: str = 'json',
-    additional_info: dict | None = None,
+    model_fields: dict | None = None,
     resolved_uuid: str = None,
     address: str | None = None,
 ) -> str:
@@ -106,7 +117,7 @@ def insert_person(
                 "MATCH (p:Person {id: $id}) SET p.address = $addr, p.updated_at = datetime()",
                 id=resolved_uuid, addr=address,
             )
-        _set_flat_props(tx, resolved_uuid, 'Person', additional_info)
+        _set_flat_props(tx, resolved_uuid, 'Person', model_fields)
         tx.run("MATCH (p:Person {id: $id}) SET p.updated_at = datetime()", id=resolved_uuid)
         return resolved_uuid
 
@@ -124,20 +135,20 @@ def insert_person(
             "MATCH (p:Person {id: $id}) SET p.address = $addr",
             id=pid, addr=address,
         )
-    _set_flat_props(tx, pid, 'Person', additional_info)
+    _set_flat_props(tx, pid, 'Person', model_fields)
     return pid
 
 
 # ══════════════════════════════════════════════════════════════════════════
 # 4. Organization
-# additional_info dict keys → direct node properties
+# model_fields dict keys → direct node properties
 # address is stored as o.address on the Organization node (NOT on the relationship)
 # ══════════════════════════════════════════════════════════════════════════
 
 def upsert_organization(
     tx,
     name: str,
-    additional_info: dict | None = None,
+    model_fields: dict | None = None,
     resolved_uuid: str = None,
     address: str | None = None,
 ) -> str | None:
@@ -151,7 +162,7 @@ def upsert_organization(
                 "MATCH (o:Organization {id: $id}) SET o.address = $addr, o.updated_at = datetime()",
                 id=resolved_uuid, addr=address,
             )
-        _set_flat_props(tx, resolved_uuid, 'Organization', additional_info)
+        _set_flat_props(tx, resolved_uuid, 'Organization', model_fields)
         tx.run("MATCH (o:Organization {id: $id}) SET o.updated_at = datetime()", id=resolved_uuid)
         return resolved_uuid
 
@@ -170,7 +181,7 @@ def upsert_organization(
             "MATCH (o:Organization {id: $id}) SET o.address = $addr",
             id=oid, addr=address,
         )
-    _set_flat_props(tx, oid, 'Organization', additional_info)
+    _set_flat_props(tx, oid, 'Organization', model_fields)
     return oid
 
 
@@ -184,7 +195,7 @@ def upsert_judge(
     designation=None,
     uid_number=None,
     court=None,
-    additional_info: dict | None = None,
+    model_fields: dict | None = None,
     resolved_uuid: str = None,
 ) -> str:
     norm = normalize_name(name) if name else None
@@ -196,7 +207,7 @@ def upsert_judge(
                        p.current_court = COALESCE($court, p.current_court),
                        p.updated_at    = datetime()""",
                id=resolved_uuid, desig=designation, court=court)
-        _set_flat_props(tx, resolved_uuid, 'Person', additional_info)
+        _set_flat_props(tx, resolved_uuid, 'Person', model_fields)
         return resolved_uuid
 
     if uid_number:
@@ -210,7 +221,7 @@ def upsert_judge(
                            p.current_court = COALESCE($court, p.current_court),
                            p.updated_at    = datetime()""",
                    id=row['id'], desig=designation, court=court)
-            _set_flat_props(tx, row['id'], 'Person', additional_info)
+            _set_flat_props(tx, row['id'], 'Person', model_fields)
             return row['id']
 
     r = tx.run("""
@@ -228,7 +239,7 @@ def upsert_judge(
         norm=norm, id=str(uuid.uuid4()), name=name,
         desig=designation, uid=uid_number, court=court)
     jid = r.single()['id']
-    _set_flat_props(tx, jid, 'Person', additional_info)
+    _set_flat_props(tx, jid, 'Person', model_fields)
     return jid
 
 
@@ -236,7 +247,7 @@ def upsert_judge(
 # 6. Case
 # ══════════════════════════════════════════════════════════════════════════
 
-def upsert_case(tx, case, court_id: str | None, outer: dict, summary=None) -> str:
+def upsert_case(tx, case, court_id: str | None, outer: dict, summary=None, case_updates=None) -> str:
     r = tx.run("""
         MERGE (c:Case {cnr: $cnr})
         ON CREATE SET
@@ -258,14 +269,14 @@ def upsert_case(tx, case, court_id: str | None, outer: dict, summary=None) -> st
             c.type_of_disposal = $type_of_disposal,
             c.in_favour_of = $in_favour_of,
             c.source = $source,
-            c.summary = $summary,
+            c.search_summary = $summary,
             c.created_at = datetime()
         ON MATCH SET
             c.status = $status,
             c.last_hearing_date = $last_hearing_date,
             c.decision_date = $decision_date,
-            c.summary = CASE WHEN $summary IS NOT NULL
-                             THEN $summary ELSE c.summary END,
+            c.search_summary = CASE WHEN $summary IS NOT NULL
+                             THEN $summary ELSE c.search_summary END,
             c.updated_at = datetime()
         RETURN c.id AS id""",
         cnr=case.cnr_number, id=str(uuid.uuid4()),
@@ -289,6 +300,7 @@ def upsert_case(tx, case, court_id: str | None, outer: dict, summary=None) -> st
         summary=summary,
     )
     case_id = r.single()['id']
+    
     if court_id:
         tx.run("""
             MATCH (c:Case {id: $cid})
@@ -296,15 +308,15 @@ def upsert_case(tx, case, court_id: str | None, outer: dict, summary=None) -> st
             MATCH (ct:Court {id: $ctid})
             MERGE (c)-[:HEARD_IN]->(ct)""",
             cid=case_id, ctid=court_id)
+            
+    if case_updates:
+        _set_flat_props(tx, case_id, 'Case', case_updates)
+        
     return case_id
 
 
 # ══════════════════════════════════════════════════════════════════════════
 # 7. Case parties (petitioners + respondents)
-#
-# ADDRESS CHANGE: address is now written onto the Person / Organization
-# node itself (p.address / o.address) rather than on the relationship.
-# The relationship still carries party_id and display_name for audit.
 # ══════════════════════════════════════════════════════════════════════════
 
 def insert_case_parties(
@@ -312,20 +324,11 @@ def insert_case_parties(
     case_id: str,
     persons,
     person_id_map: dict,
-    party_addresses: list,
 ) -> dict:
     """
     Link petitioners / respondents to the Case node.
-    Address is written onto the Person or Organization node — NOT the relationship.
     Returns party_id_map: {'petitioner::NAME': party_uuid, ...}
     """
-    # Build address lookup keyed by lowercased party name
-    addr_lookup = {
-        (p.get('name') or '').lower(): p.get('address')
-        for p in party_addresses
-        if p.get('address')
-    }
-
     party_id_map: dict = {}
 
     for p in persons:
@@ -335,18 +338,7 @@ def insert_case_parties(
         if not entity_id:
             continue
 
-        # Resolve address: prefer LLM-extracted address, fall back to JSON field
-        address_text = addr_lookup.get(p.name.lower()) or p.address_text
-
-        # Write address onto the entity node itself
-        if address_text:
-            label = 'Organization' if p.is_org else 'Person'
-            tx.run(
-                f'MATCH (e:{label} {{id: $eid}}) SET e.address = $addr',
-                eid=entity_id, addr=address_text,
-            )
-
-        rel        = p.role.upper() + '_IN'
+        rel        = clean_rel_type(p.role)
         label      = 'Organization' if p.is_org else 'Person'
         party_uuid = str(uuid.uuid4())
 
@@ -354,9 +346,8 @@ def insert_case_parties(
             MATCH (e:{label} {{id: $eid}})
             WITH e
             MATCH (c:Case {{id: $cid}})
-            MERGE (e)-[r:{rel}]->(c)
-            SET r.party_id = $pid, r.display_name = $name""",
-            eid=entity_id, cid=case_id, pid=party_uuid, name=p.name)
+            MERGE (e)-[r:{rel}]->(c)""",
+            eid=entity_id, cid=case_id)
 
         party_id_map[f'{p.role}::{p.name}'] = party_uuid
 
@@ -397,8 +388,13 @@ def insert_case_lawyers(
 
     for adv in missing_advocates:
         from utils.helpers import to_none
-        name = to_none(adv.get('name'))
-        side = adv.get('side', 'petitioner')
+        if isinstance(adv, str):
+            name = to_none(adv)
+            side = 'petitioner'
+        else:
+            name = to_none(adv.get('name'))
+            side = adv.get('side', 'petitioner')
+
         if not name:
             continue
         pid = insert_person(tx, name, name_source='pdf')
@@ -494,7 +490,6 @@ def update_document_text(tx, doc_id: str, full_text: str, method: str) -> None:
 # ══════════════════════════════════════════════════════════════════════════
 # 12. Assets
 # attributes dict keys → flat Asset node properties
-# e.g. {'floor': '4th', 'wing': 'B'} → asset.floor = '4th', asset.wing = 'B'
 # ══════════════════════════════════════════════════════════════════════════
 
 def insert_assets(tx, case_id: str, assets: list, doc_id_map: dict) -> None:
@@ -562,11 +557,11 @@ def insert_extraction_log(
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# 14. Case vector (Neo4j — stored directly on the Case node)
+# 14. Case vector
 # ══════════════════════════════════════════════════════════════════════════
 
 def update_case_vector(tx, case_id: str, vector: list) -> None:
-    """Store the embedding for a Case node (used by vector index)."""
+    """Store the embedding for a Case node."""
     tx.run(
         "MATCH (c:Case {id: $id}) SET c.search_vector = $vec",
         id=case_id, vec=vector,

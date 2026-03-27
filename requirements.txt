@@ -5,14 +5,18 @@ numpy
 opencv-python==4.13.0.92
 pdf2image==1.17.0
 pdfplumber==0.11.9
-pillow==12.1.1
+pillow>=10.2.0,<11.0.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
-pytesseract==0.3.13
 requests==2.32.5
 spacy==3.8.11
 tenacity==9.1.4
 tqdm==4.67.3
-orjson=3.11.7
-pandas=2.3.3
-numpy
+orjson>=3.11.7
+pandas>=2.3.3
+surya-ocr==0.7.0
+pymupdf==1.24.11
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision
+torchaudio

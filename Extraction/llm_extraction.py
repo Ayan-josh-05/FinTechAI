@@ -1,7 +1,7 @@
 """
 LLM/llm_extraction.py
 All interactions with the NVIDIA LLM API:
-  - run_llm_extraction()     : one call per case → summary + judge + assets + addresses
+  - run_llm_extraction()     : one call per case → summary + judges + assets + new_parties
   - run_batch_adjudicator()  : batch entity resolution against graph candidates
   - run_llm_adjudicator()    : single-entity resolution (manual / fallback)
   - get_fuzzy_candidates()   : Neo4j read helper for entity-resolution candidates
@@ -14,6 +14,12 @@ from pathlib import Path
 import requests
 from tenacity import retry, wait_exponential, stop_after_attempt
 
+from models.entities import (
+    User, Judge, Lawyer, Case, Organization, Court, Act, 
+    CaseHearing, Asset, Document,
+    get_presence_manifest, get_model_schema_description, get_compact_schema_description
+)
+
 from config import (
     EXTRACTION_MODEL, EXTRACT_URL, NVIDIA_HEADERS,
 )
@@ -23,10 +29,20 @@ logger = logging.getLogger('pipeline')
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# System prompts
+# Dynamic Prompt Generation
 # ══════════════════════════════════════════════════════════════════════════
 
-PDF_EXTRACTION_PROMPT = """\
+def generate_pdf_extraction_prompt(json_advocates, json_parties, case_manifest):
+    """
+    Dynamically generates the extraction prompt based on entity models.
+    """
+    case_schema  = get_compact_schema_description(Case)
+    judge_schema = get_compact_schema_description(Judge)
+    asset_schema = get_compact_schema_description(Asset)
+    party_schema = get_compact_schema_description(User)
+    org_schema   = get_compact_schema_description(Organization)
+    
+    prompt = f"""\
 You are a legal data analyst for Indian district court cases.
 Documents may contain Hindi, English, or a mix of both.
 Always respond in English regardless of input language.
@@ -35,21 +51,23 @@ You will receive:
   1. STRUCTURED CASE DATA — clean fields already extracted from JSON
   2. PDF ORDER TEXT — raw text from the court order document(s)
 
-Your job is to generate a comprehensive search_summary AND extract
+Your job is to generate a comprehensive search_summary AND extract 
 specific fields the JSON data does not contain.
 
-If the script is provided in Hindi/Devangri script, Please translate
-everything into english and give english output only for the below given instructions.
+═══════════════════════════════════════════════════════════════
+A. TARGET FIELDS FOR EXTRACTION
+═══════════════════════════════════════════════════════════════
+- If the document is from a **Lok Adalat**, extraction is special.
+- Treat **Board Members** or **Panel Members** as Judges. 
+- A case may have multiple Judges / Board Members across different orders.
+- Extract ALL unique judges found across all provided texts.
 
 ═══════════════════════════════════════════════════════════════
-A. SEARCH SUMMARY
+B. SEARCH SUMMARY
 ═══════════════════════════════════════════════════════════════
-Generate a fact-dense English summary that captures EVERY important
-detail about this case. This summary is used for semantic search,
-so it must contain enough detail that any relevant query will match.
+Generate a fact-dense English summary that captures EVERY important detail about this case. This summary is used for semantic search, so it must contain enough detail that any relevant query will match.
 
-There is no limit to the number of words a summary can have. Summary should
-be long enough to include ALL the details/facts.
+There is no limit to the number of words a summary can have. Summary should be long enough to include ALL the details/facts.
 
 The summary must include all of the following in natural flowing sentences:
 
@@ -72,8 +90,7 @@ PARTIES:
 
 LEGAL:
   - All laws and sections invoked
-  - The legal nature of the dispute (loan default, possession,
-    cheque bounce, criminal matter, property dispute, etc.)
+  - The legal nature of the dispute (loan default, possession, cheque bounce, criminal matter, property dispute, etc.)
   - The final outcome or order passed
   - Disposal type (dismissed, allowed, settled, acquitted, etc.)
   - Who the decision was in favour of
@@ -95,129 +112,88 @@ PROCEEDINGS:
   - Key events across the hearings in brief
   - Whether the case was transferred between courts
   - Whether it went to Lok Adalat or alternate dispute resolution
-  - Any notable patterns in the proceedings (repeated non-appearances,
-    prolonged adjournments, court vacancies, default situations, etc.)
+  - Any notable patterns in the proceedings (repeated non-appearances, prolonged adjournments, court vacancies, default situations, etc.)
 
 IMPORTANT RULES FOR THE SUMMARY:
   - Write in plain factual English sentences, not bullet points
   - Include specific names, numbers, dates — not vague language
   - If something is not mentioned in the data, skip it — never invent
-  - Length should match complexity — brief for simple cases,
-    detailed for complex ones. Let content decide length.
+  - Length should match complexity — brief for simple cases, detailed for complex ones. Let content decide length.
   - Do NOT use section headers inside the summary
   - The summary should read like a dense fact sheet, not a story
   - Do not miss any important facts.
   - Do not hallucinate.
   - Do not add any extra information that is not present in the PDF.
-═══════════════════════════════════════════════════════════════
-B. JUDGE (from PDF only — JSON never has personal name)
-═══════════════════════════════════════════════════════════════
-Extract judge's personal name from PDF header or signature block.
-Examples:
-  Header:    'Present: Thiru. M. ZIAVUR RAHUMAN, XXV Assistant Judge'
-  Signature: 'Sd/ M. A. Shinde, Chief Metropolitan Magistrate'
-Return null for any field not found in the PDF.
 
 ═══════════════════════════════════════════════════════════════
-C. ASSETS (from PDF only — JSON never has asset data)
+C. TARGET FIELDS FOR EXTRACTION
 ═══════════════════════════════════════════════════════════════
-Extract every physical or financial asset mentioned in the PDF.
-Asset types: vehicle / plot / flat / commercial_property /
-             bank_account / cheque / machinery / other
-Identifier = the single most unique ID for each asset.
-Amount rules: Rs.5,32,92,950/- → estimated_value_inr = 532929500
-              1 lakh = 100000, 1 crore = 10000000
+Search the PDF carefully for the following entities.
+
+1. CASE DATA PRESENCE MANIFEST (Fill 'Missing' fields if found in PDF)
+{case_manifest}
+Schema for Case Updates:
+{case_schema}
+
+2. JUDGES (PDF only)
+   Required Fields:
+{judge_schema}
+
+3. ASSETS (PDF only)
+   Required Fields:
+{asset_schema}
+
+4. NEW PARTIES & ADDITIONAL INFO (PDF only)
+   JSON parties already known: {json_parties}
+   - For KNOWN parties: Extract additional details ( Aadhaar, PAN, Age, etc.)
+   - For UNKNOWN parties: Extract full details for any People or Organizations 
+     mentioned in the PDF that are NOT in the JSON list above.
+   
+   Schema Descriptions:
+   Person:
+{party_schema}
+
+   Organization:
+{org_schema}
+
+5. MISSING ADVOCATES (PDF only)
+   JSON advocates already known: {json_advocates}
+   Extract ONLY those in PDF who are NOT in the above list.
 
 ═══════════════════════════════════════════════════════════════
-D. MISSING ADVOCATES (PDF only)
+B. SEARCH SUMMARY
 ═══════════════════════════════════════════════════════════════
-JSON already has these advocates: {json_advocates}
-Extract ONLY advocates in PDF who are NOT in the above list.
+Generate a fact-dense English summary encompassing Identity, Timeline, Parties, Legal facts, Financial facts, Assets, and Proceedings. This summary is used for semantic search. Be thorough. No word limit.
 
 ═══════════════════════════════════════════════════════════════
-E. PARTY ADDRESSES (PDF only)
+C. CRITICAL RULES (Strict Compliance Required)
 ═══════════════════════════════════════════════════════════════
-JSON parties (addresses mostly empty): {json_parties}
-For each party, extract their full address from the PDF if present.
-Use party name EXACTLY as in JSON. Return null if not found.
+1. NO PLACEHOLDERS: If a field is NOT found in the PDF, do NOT return strings like "Not mentioned", "N/A", "None", or "Unknown". You MUST set the value to null.
+2. EXTRACTION LOGS: Every time a required field is null, you MUST add an entry to the "missing_data_log" explaining why (e.g. {{ "missing_object": "uid_number", "reason": "Not mentioned in the PDF" }}).
+3. TRUTH ONLY: Do not hallucinate. If it's not in the PDF, it's null.
+4. CONSISTENCY: Use ONLY the field names defined in the schemas above.
 
 ═══════════════════════════════════════════════════════════════
-F. ADDITIONAL INFO (PDF only)
+RETURN THIS EXACT JSON SCHEMA — complete all fields:
 ═══════════════════════════════════════════════════════════════
-Using the known case parties below:
-{json_parties}
-Search the PDF text to extract ANY supplementary information available
-for these specific individuals or organizations (e.g., age, occupation,
-registration numbers, aliases, managing directors, etc.).
-Output this as JSON key-value pairs assigned to the EXACT party name.
-
-═══════════════════════════════════════════════════════════════
-RETURN THIS EXACT JSON — complete all fields:
-═══════════════════════════════════════════════════════════════
-
-{{
-  "search_summary": "comprehensive fact-dense English summary here",
-
-  "missing_data_log": [
     {{
-      "missing_object": "judge_name",
-      "reason": "Not mentioned in the attached order"
-    }}
+  "case_updates": {{ "field_name": "value" }},
+  "missing_data_log": [ {{ "missing_object": "field_name", "reason": "why" }} ],
+  "judges": [ {{ "name": "...", "designation": "...", "uid_number": "..." }} ],
+  "assets": [ {{ "asset_type": "...", "identifier": "...", "attributes": {{}} }} ],
+  "new_parties": [
+     {{ "type": "person", "name": "...", "role": "...", "info": {{}} }},
+     {{ "type": "organization", "name": "...", "role": "...", "info": {{}} }}
   ],
-
-  "judge": {{
-    "name": "personal name or null",
-    "designation": "official title or null",
-    "uid_number": "UID number or null",
-    "court": "court name from PDF or null"
-  }},
-
-  "assets": [
-    {{
-      "asset_type": "flat",
-      "identifier": "Flat No. 42",
-      "description": "exact description as written in PDF",
-      "address": "full address string or null",
-      "estimated_value_inr": null,
-      "attributes": {{
-        "floor": "4th",
-        "wing": "B",
-        "building_name": "Rustomjee Adarsh Dugdhalay Lane",
-        "locality": "Malad (West)",
-        "city": "Mumbai",
-        "pincode": "400064"
-      }}
-    }}
-  ],
-
-  "missing_advocates": [
-    {{
-      "name": "advocate name exactly as in PDF",
-      "side": "petitioner or respondent"
-    }}
-  ],
-
-  "party_addresses": [
-    {{
-      "name": "party name exactly as in JSON",
-      "address": "full address from PDF or null"
-    }}
-  ],
-
   "party_additional_info": [
-    {{
-      "name": "party name exactly as in JSON",
-      "info": {{
-        "age": 45,
-        "occupation": "Director",
-        "registration_number": "XYZ123"
-      }}
-    }}
+     {{ "name": "...", "info": {{}} }}
+  ],
+  "missing_advocates": [
+     {{ "name": "...", "side": "petitioner/respondent" }}
   ]
 }}
-
-Return ONLY valid JSON. No markdown fences. No explanation outside the JSON.
-""".strip()
+"""
+    return prompt
 
 
 BATCH_RESOLUTION_PROMPT = """
@@ -264,7 +240,20 @@ def build_llm_context(pdf_texts: dict, case) -> tuple[str, str]:
     Build (filled_system_prompt, user_content).
     user_content = structured case data + PDF text combined.
     """
-    logger.info(f"Starting build_llm_context for {case.cnr_number}")
+    logger.debug(f"Starting build_llm_context for {case.cnr_number}")
+    
+    # Generate Case Manifest for LLM
+    case_entity = Case(
+        case_number = case.case_number,
+        cnr_number  = case.cnr_number,
+        case_type   = case.case_type,
+        status      = case.case_status,
+        filing_date = str(case.filing_date) if case.filing_date else None,
+        disposal_date = str(case.disposal_date) if case.disposal_date else None,
+        stage       = case.case_stage
+    )
+    case_manifest = get_presence_manifest(case_entity)
+    
     json_advocates = [
         p.name for p in case.persons
         if p.role in ('petitioner_advocate', 'respondent_advocate')
@@ -274,9 +263,11 @@ def build_llm_context(pdf_texts: dict, case) -> tuple[str, str]:
         for p in case.persons
         if p.role in ('petitioner', 'respondent')
     ]
-    filled_prompt = PDF_EXTRACTION_PROMPT.format(
+    
+    filled_prompt = generate_pdf_extraction_prompt(
         json_advocates=json_advocates if json_advocates else '[]',
         json_parties  =_json.dumps(json_parties, ensure_ascii=False),
+        case_manifest = _json.dumps(case_manifest, indent=2)
     )
 
     lines = ['=== STRUCTURED CASE DATA ===']
@@ -386,21 +377,22 @@ def build_llm_context(pdf_texts: dict, case) -> tuple[str, str]:
 def run_llm_extraction(pdf_texts: dict, case) -> dict:
     """
     One LLM call per case.
-    Returns: search_summary, judge, assets, missing_advocates,
-             party_addresses, party_additional_info, missing_data_log.
+    Returns: search_summary, judges, assets, missing_advocates,
+             party_addresses, party_additional_info, missing_data_log, new_parties.
     """
-    logger.info(f"Starting run_llm_extraction for {case.cnr_number}")
+    logger.debug(f"Starting run_llm_extraction for {case.cnr_number}")
     filled_prompt, user_content = build_llm_context(pdf_texts, case)
 
     if not pdf_texts:
         logger.warning(f'No PDF text for {case.cnr_number} — skipping LLM')
         return {
-            'search_summary'     : None,
-            'judge'              : None,
+            'judges'             : [],
             'assets'             : [],
             'missing_advocates'  : [],
-            'party_addresses'    : [],
             'party_additional_info': [],
+            'missing_data_log'   : [],
+            'case_updates'       : {},
+            'new_parties'        : [],
         }
 
     payload = {
@@ -409,38 +401,86 @@ def run_llm_extraction(pdf_texts: dict, case) -> dict:
             {'role': 'system', 'content': filled_prompt},
             {'role': 'user',   'content': user_content},
         ],
-        'max_tokens'       : 15000,
+        'max_tokens'       : 8000,
         'temperature'      : 0,
         'top_p'            : 0.95,
         'frequency_penalty': 0.0,
         'presence_penalty' : 0.0,
-        'stream'           : False,
+        'stream'           : True,
     }
 
-    resp = requests.post(EXTRACT_URL, headers=NVIDIA_HEADERS, json=payload, timeout=120)
+    import time
+    start_time = time.time()
+    logger.info(f"Sending LLM request for {case.cnr_number} (System: {len(filled_prompt)}, User: {len(user_content)})")
+    
+    full_response_text = ""
+    try:
+        with requests.post(EXTRACT_URL, headers=NVIDIA_HEADERS, json=payload, timeout=240, stream=True) as resp:
+            if resp.status_code in (401, 403):
+                logger.error(f"NVIDIA API Authentication/Permission Error {resp.status_code}")
+                raise Exception(f"Auth error {resp.status_code}")
+            
+            if resp.status_code != 200:
+                logger.error(f'NVIDIA API error {resp.status_code}: {resp.text[:300]}')
+                raise Exception(f'API error {resp.status_code}')
 
-    if resp.status_code == 429:
-        logger.warning('NVIDIA rate limit — retrying...')
-        raise Exception('Rate limited')
-    if resp.status_code != 200:
-        logger.error(f'NVIDIA API error {resp.status_code}: {resp.text[:300]}')
-        raise Exception(f'API error {resp.status_code}')
+            logger.info("Connection established. Streaming LLM response...")
+            last_log_time = time.time()
+            char_count = 0
+            
+            for line in resp.iter_lines():
+                if line:
+                    decoded_line = line.decode('utf-8')
+                    if decoded_line.startswith('data: '):
+                        data_str = decoded_line[len('data: '):]
+                        if data_str.strip() == '[DONE]':
+                            break
+                        try:
+                            chunk = _json.loads(data_str)
+                            content = chunk['choices'][0]['delta'].get('content', '')
+                            full_response_text += content
+                            char_count += len(content)
+                            
+                            # Log progress every 15 seconds
+                            if time.time() - last_log_time > 15:
+                                elapsed = time.time() - start_time
+                                logger.debug(f"Streaming progress for {case.cnr_number}: {char_count} chars received in {elapsed:.1f}s...")
+                                last_log_time = time.time()
+                        except:
+                            continue
 
-    raw = resp.json()['choices'][0]['message']['content'].strip()
+        elapsed = time.time() - start_time
+        logger.info(f"LLM extraction complete for {case.cnr_number} in {elapsed:.2f}s. Total characters received: {len(full_response_text)}")
+        
+    except requests.exceptions.Timeout:
+        logger.warning(f"LLM request timed out for {case.cnr_number} after {time.time() - start_time:.2f}s")
+        raise
+    except Exception as e:
+        logger.error(f"LLM request system error for {case.cnr_number}: {e}")
+        raise
+
+    raw = full_response_text.strip()
     if '```' in raw:
         raw = raw.split('```')[1]
         if raw.startswith('json'):
             raw = raw[4:]
+        raw = raw.split('```')[0]
     raw = raw.strip()
 
     try:
         result = _json.loads(raw)
-        result.setdefault('search_summary',      None)
-        result.setdefault('judge',               None)
+        result.setdefault('judges',              [])
         result.setdefault('assets',              [])
         result.setdefault('missing_advocates',   [])
-        result.setdefault('party_addresses',     [])
         result.setdefault('party_additional_info', [])
+        result.setdefault('missing_data_log',    [])
+        result.setdefault('case_updates',        {})
+        result.setdefault('new_parties',         [])
+        
+        # Backward compatibility for 'search_summary' mapping
+        if 'case_updates' in result and 'search_summary' in result['case_updates']:
+             result['search_summary'] = result['case_updates']['search_summary']
+        
         return result
     except _json.JSONDecodeError as e:
         logger.error(f'LLM returned invalid JSON for {case.cnr_number}: {e}')
@@ -456,10 +496,8 @@ def run_llm_extraction(pdf_texts: dict, case) -> dict:
 def run_batch_adjudicator(batch_payload: dict) -> dict:
     """
     Resolve multiple entities against graph candidates in one LLM call.
-    batch_payload = {'entities_to_adjudicate': [...]}
-    Returns {'resolutions': [...]}
     """
-    logger.info("Starting run_batch_adjudicator")
+    logger.debug("Starting run_batch_adjudicator")
     if not batch_payload.get('entities_to_adjudicate'):
         return {'resolutions': []}
 
@@ -493,11 +531,8 @@ def run_batch_adjudicator(batch_payload: dict) -> dict:
 def run_llm_adjudicator(new_entity: dict, db_candidates: list) -> dict:
     """
     Resolve a single entity against graph candidates.
-    new_entity    : {'name': ..., 'entity_type': ..., 'context': ...}
-    db_candidates : list of dicts from get_fuzzy_candidates()
-    Returns {'match_confidence': 'EXACT'|'NONE', 'matched_uuid': str|None, 'reasoning': str}
     """
-    logger.info(f"Starting run_llm_adjudicator for entity: {new_entity.get('name')}")
+    logger.debug(f"Starting run_llm_adjudicator for entity: {new_entity.get('name')}")
     user_string = (
         "--- NEW ENTITY ---\n"
         f"{_json.dumps(new_entity, indent=2)}\n\n"
@@ -539,10 +574,8 @@ def run_llm_adjudicator(new_entity: dict, db_candidates: list) -> dict:
 def get_fuzzy_candidates(tx, name: str, entity_type: str) -> list[dict]:
     """
     Query Neo4j for candidate nodes that might match *name*.
-    entity_type: 'organization' | 'judge' | 'person' | 'lawyer' |
-                 'respondent' | 'petitioner' | 'court'
     """
-    logger.info(f"Starting get_fuzzy_candidates for name: {name}, type: {entity_type}")
+    logger.debug(f"Starting get_fuzzy_candidates for name: {name}, type: {entity_type}")
     from utils.helpers import normalize_name
     norm     = normalize_name(name)
     fragment = norm[:12]
@@ -556,8 +589,7 @@ def get_fuzzy_candidates(tx, name: str, entity_type: str) -> list[dict]:
             WHERE o.name_norm CONTAINS $f OR $f CONTAINS o.name_norm
             RETURN o.id AS id, o.name AS name,
                    coalesce(o.organization_type, '') AS type,
-                   coalesce(o.additional_info, '') AS info
-            LIMIT 3""", f=fragment)
+                   coalesce(o.additional_info, '') AS info""", f=fragment)
         for r in rows:
             candidates.append({'id': r['id'], 'name': r['name'],
                                 'type': r['type'], 'info': r['info']})
@@ -568,8 +600,7 @@ def get_fuzzy_candidates(tx, name: str, entity_type: str) -> list[dict]:
             WHERE (p.name_norm CONTAINS $f OR $f CONTAINS p.name_norm)
               AND coalesce(p.is_judge, false) = true
             RETURN p.id AS id, p.name AS name,
-                   coalesce(p.designation, '') AS designation
-            LIMIT 3""", f=fragment)
+                   coalesce(p.designation, '') AS designation""", f=fragment)
         for r in rows:
             candidates.append({'id': r['id'], 'name': r['name'],
                                 'designation': r['designation']})
@@ -579,8 +610,7 @@ def get_fuzzy_candidates(tx, name: str, entity_type: str) -> list[dict]:
             MATCH (p:Person)
             WHERE p.name_norm CONTAINS $f OR $f CONTAINS p.name_norm
             RETURN p.id AS id, p.name AS name,
-                   coalesce(p.additional_info, '') AS info
-            LIMIT 3""", f=fragment)
+                   coalesce(p.additional_info, '') AS info""", f=fragment)
         for r in rows:
             candidates.append({'id': r['id'], 'name': r['name'], 'info': r['info']})
 
@@ -590,8 +620,7 @@ def get_fuzzy_candidates(tx, name: str, entity_type: str) -> list[dict]:
             WHERE toLower(c.name) CONTAINS $f OR $f CONTAINS toLower(c.name)
             RETURN c.id AS id, c.name AS name,
                    coalesce(c.district, '') AS district,
-                   coalesce(c.state, '') AS state
-            LIMIT 3""", f=fragment)
+                   coalesce(c.state, '') AS state""", f=fragment)
         for r in rows:
             candidates.append({'id': r['id'], 'name': r['name'],
                                 'district': r['district'], 'state': r['state']})

@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ── Paths ──────────────────────────────────────────────────────────────────
-DATASET_ROOT  = Path(r'/home/ue/LegalAI/Extraction/data')
+DATASET_ROOT  = Path(os.getenv('DATASER_ROOT'))
 MANIFEST_PATH = Path('./manifest.csv')
 LOG_PATH      = Path('./pipeline.log')
 
@@ -58,4 +58,4 @@ ORG_KEYWORDS = {
 }
 
 # ── Pipeline ───────────────────────────────────────────────────────────────
-N_CASES = 5   # number of pending cases to process per run
+N_CASES = 10  # number of pending cases to process per run

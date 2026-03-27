@@ -8,14 +8,15 @@ Run:
 Phases per case:
   1  JSON load + Pydantic validation
   2  PDF text extraction (digital → OCR fallback)
-  3  LLM extraction (summary, judge, assets, addresses, advocates)
-  4  Neo4j graph inserts (entity resolution + all node/relationship writes)
+  3  LLM extraction (summary, judges, assets, new_parties, addresses, advocates)
+  4  Neo4j graph inserts (entity resolution + multi-judge/party mapping)
   5  Document text backfill
   6  Embedding → stored on Case node in Neo4j
 """
 import logging
 import time
 import traceback
+import uuid
 from pathlib import Path
 
 from tqdm import tqdm
@@ -59,7 +60,7 @@ from llm_extraction import (
 )
 
 # ── Utils ───────────────────────────────────────────────────────────────────
-from utils.helpers import dedup_assets, to_none
+from utils.helpers import dedup_assets, to_none, clean_rel_type
 
 import requests
 import numpy as np
@@ -70,13 +71,16 @@ from tenacity import retry, wait_exponential, stop_after_attempt
 # Logging
 # ══════════════════════════════════════════════════════════════════════════
 
+file_handler = logging.FileHandler(LOG_PATH, encoding='utf-8')
+file_handler.setLevel(logging.DEBUG)
+
+stream_handler = logging.StreamHandler()
+stream_handler.setLevel(logging.INFO)
+
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s | %(levelname)-8s | %(message)s',
-    handlers=[
-        logging.FileHandler(LOG_PATH, encoding='utf-8'),
-        logging.StreamHandler(),
-    ],
+    handlers=[file_handler, stream_handler],
 )
 logger = logging.getLogger('pipeline')
 
@@ -86,7 +90,7 @@ logger = logging.getLogger('pipeline')
 # ══════════════════════════════════════════════════════════════════════════
 
 def embed_texts(texts: list, is_query: bool = False) -> list:
-    logger.info("Starting embed_texts")
+    logger.debug("Starting embed_texts")
     if not texts:
         return []
     payload = {
@@ -127,23 +131,23 @@ def resolve_pdf_path(storage_id: str, pdf_paths: list[str]) -> str | None:
 # ══════════════════════════════════════════════════════════════════════════
 
 def process_case(json_path: str, pdf_paths: list[str]) -> dict:
-    logger.info(f"Starting process_case for {json_path}")
+    logger.debug(f"Starting process_case for {json_path}")
     result = {
         'cnr': None, 'hearings': 0, 'documents': 0,
         'pdfs_extracted': 0, 'ocr_count': 0,
         'assets': 0, 'missing_advocates': 0,
-        'party_addresses': 0, 'judge_found': False,
+        'party_addresses': 0, 'judges_found': 0,
         'summary_words': 0, 'errors': [],
     }
 
     # ── PHASE 1: JSON load + validation ────────────────────────────────
-    logger.info(f"Starting PHASE 1: JSON load for {json_path}")
+    logger.debug(f"Starting PHASE 1: JSON load for {json_path}")
     outer, raw = load_json(json_path)
     case       = build_case_model(outer, raw)
     result['cnr'] = case.cnr_number
 
     # ── PHASE 2: PDF extraction ─────────────────────────────────────────
-    logger.info(f"Starting PHASE 2: PDF extraction for {result['cnr']}")
+    logger.debug(f"Starting PHASE 2: PDF extraction for {result['cnr']}")
     pdf_texts   : dict = {}
     pdf_fields  : dict = {}
     pdf_methods : dict = {}
@@ -165,27 +169,26 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
             result['pdfs_extracted'] += 1
 
     # ── PHASE 3: LLM extraction ─────────────────────────────────────────
-    logger.info(f"Starting PHASE 3: LLM extraction for {result['cnr']}")
+    logger.debug(f"Starting PHASE 3: LLM extraction for {result['cnr']}")
     llm_result        = run_llm_extraction(pdf_texts, case)
     summary           = llm_result.get('search_summary') or ''
-    judge_data        = llm_result.get('judge') or {}
+    judges_data       = llm_result.get('judges', [])
     raw_assets        = llm_result.get('assets', [])
     missing_advocates = llm_result.get('missing_advocates', [])
-    party_addresses   = llm_result.get('party_addresses', [])
     missing_log       = llm_result.get('missing_data_log', [])
+    new_parties       = llm_result.get('new_parties', [])
 
     result['summary_words']     = len(summary.split())
     result['assets']            = len(raw_assets)
     result['missing_advocates'] = len(missing_advocates)
-    result['party_addresses']   = len([p for p in party_addresses if p.get('address')])
-    result['judge_found']       = bool(judge_data.get('name'))
+    result['judges_found']      = len(judges_data)
 
     for asset in raw_assets:
         asset['_source_storage_id'] = next(iter(pdf_texts), None)
     deduped_assets = dedup_assets(raw_assets)
 
     # ── PHASE 4: Neo4j graph inserts ────────────────────────────────────
-    logger.info(f"Starting PHASE 4: Neo4j graph inserts for {result['cnr']}")
+    logger.debug(f"Starting PHASE 4: Neo4j graph inserts for {result['cnr']}")
     with neo4j_driver.session() as session:
 
         def _write(tx):
@@ -199,14 +202,15 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
             # ── Entity resolution (batch) ──────────────────────────────
             entities_to_batch = []
 
-            if judge_data.get('name'):
-                cands = get_fuzzy_candidates(tx, judge_data['name'], 'judge')
-                if cands:
-                    entities_to_batch.append({
-                        'extracted_name': judge_data['name'],
-                        'entity_type'   : 'judge',
-                        'db_candidates' : cands,
-                    })
+            for j in judges_data:
+                if j.get('name'):
+                    cands = get_fuzzy_candidates(tx, j['name'], 'judge')
+                    if cands:
+                        entities_to_batch.append({
+                            'extracted_name': j['name'],
+                            'entity_type'   : 'judge',
+                            'db_candidates' : cands,
+                        })
 
             for p in case.persons:
                 etype = 'organization' if p.is_org else 'person'
@@ -217,13 +221,28 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
                         'entity_type'   : etype,
                         'db_candidates' : cands,
                     })
-
-            for m in missing_advocates:
-                if m.get('name'):
-                    cands = get_fuzzy_candidates(tx, m['name'], 'lawyer')
+            
+            for np in new_parties:
+                # Handle both string and dict formats from LLM
+                np_name = np if isinstance(np, str) else np.get('name')
+                if np_name:
+                    etype = 'person' if isinstance(np, str) else np.get('type', 'person').lower()
+                    cands = get_fuzzy_candidates(tx, np_name, etype)
                     if cands:
                         entities_to_batch.append({
-                            'extracted_name': m['name'],
+                            'extracted_name': np_name,
+                            'entity_type'   : etype,
+                            'db_candidates' : cands,
+                        })
+
+            for m in missing_advocates:
+                # Handle both string and dict formats from LLM
+                m_name = m if isinstance(m, str) else m.get('name')
+                if m_name:
+                    cands = get_fuzzy_candidates(tx, m_name, 'lawyer')
+                    if cands:
+                        entities_to_batch.append({
+                            'extracted_name': m_name,
                             'entity_type'   : 'person',
                             'db_candidates' : cands,
                         })
@@ -242,18 +261,11 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
                     logger.error(f'Batch AI failed: {e}. Using default matching.')
 
             # ── Additional info lookup ─────────────────────────────────
-            party_additional_info = llm_result.get('party_additional_info', [])
+            party_info_list = llm_result.get('party_additional_info', [])
             info_lookup = {
                 (p.get('name') or '').lower(): p.get('info')
-                for p in party_additional_info
+                for p in party_info_list
                 if p.get('info')
-            }
-
-            # ── Address lookup (for writing onto nodes) ────────────────
-            addr_lookup = {
-                (p.get('name') or '').lower(): p.get('address')
-                for p in party_addresses
-                if p.get('address')
             }
 
             # ── Upsert persons / organizations ─────────────────────────
@@ -261,8 +273,6 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
             for p in case.persons:
                 p_info       = info_lookup.get(p.name.lower())
                 mistral_uuid = resolved_uuids_map.get(p.name)
-                # Resolve address: LLM-extracted first, JSON field as fallback
-                address_val  = addr_lookup.get(p.name.lower()) or p.address_text
 
                 if p.role in ('petitioner_advocate', 'respondent_advocate'):
                     pid = insert_person(
@@ -270,49 +280,82 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
                     )
                 elif p.is_org:
                     pid = upsert_organization(
-                        tx, p.name, p_info, mistral_uuid, address=address_val,
+                        tx, p.name, p_info, mistral_uuid, address=p.address_text,
                     )
                 else:
                     pid = insert_person(
                         tx, p.name, 'json', p_info, mistral_uuid,
-                        address=address_val,
+                        address=p.address_text,
                     )
                 person_id_map[f'{p.role}::{p.name}'] = pid
 
-            # ── Judge ──────────────────────────────────────────────────
-            judge_pid = None
-            if judge_data.get('name'):
-                j_info       = info_lookup.get(judge_data['name'].lower())
-                mistral_uuid = resolved_uuids_map.get(judge_data['name'])
-                judge_pid = upsert_judge(
-                    tx,
-                    name        = judge_data['name'],
-                    designation = judge_data.get('designation'),
-                    uid_number  = judge_data.get('uid_number'),
-                    court       = judge_data.get('court'),
-                    additional_info = j_info,
-                    resolved_uuid   = mistral_uuid,
-                )
-
             # ── Case node ──────────────────────────────────────────────
-            case_id = upsert_case(tx, case, court_id, outer, summary)
+            case_updates = llm_result.get('case_updates', {})
+            case_id = upsert_case(tx, case, court_id, outer, summary, case_updates)
             result['hearings']  = len(case.hearings)
             result['documents'] = len(case.documents)
 
-            # ── Judge → Case ───────────────────────────────────────────
-            if judge_pid:
+            # ── Judges ─────────────────────────────────────────────────
+            for j in judges_data:
+                j_name = j.get('name')
+                if not j_name: continue
+                # These ARE the concrete data fields from entities.py
+                model_fields = {k: v for k, v in j.items() if k != 'name'}
+                
+                # If LLM finds extra info NOT in the 14 models, it goes here
+                extra_info = info_lookup.get(j_name.lower()) or {}
+                # Merge: model fields take precedence
+                model_fields.update(extra_info)
+
+                mistral_uuid = resolved_uuids_map.get(j_name)
+                jpid = upsert_judge(
+                    tx,
+                    name            = j_name,
+                    designation     = j.get('designation'),
+                    uid_number      = j.get('uid_number'),
+                    court           = j.get('court'),
+                    model_fields = model_fields, # These become hard node properties
+                    resolved_uuid   = mistral_uuid,
+                )
+                # Link Judge → Case
                 tx.run("""
                     MATCH (p:Person {id: $pid})
                     WITH p
                     MATCH (c:Case {id: $cid})
                     MERGE (p)-[r:JUDGE_IN]->(c)
                     SET r.designation = $desig""",
-                    pid=judge_pid, cid=case_id,
-                    desig=judge_data.get('designation'))
+                    pid=jpid, cid=case_id,
+                    desig=j.get('designation'))
+            
+            # ── New Parties ────────────────────────────────────────────
+            for np in new_parties:
+                np_name = np.get('name')
+                if not np_name: continue
+                np_type = np.get('type', 'person').lower()
+                np_role = np.get('role', 'party')
+                
+                # These ARE the concrete data fields from entities.py
+                model_fields = {k: v for k, v in np.items() if k not in ('type', 'name', 'role')}
+                # Also merge if LLM put extra info in a sub-dict
+                if 'info' in np and isinstance(np['info'], dict):
+                    model_fields.update(np['info'])
+                    model_fields.pop('info', None)
+
+                mistral_uuid = resolved_uuids_map.get(np_name)
+                
+                rel = clean_rel_type(np_role)
+                if np_type == 'organization':
+                    nid = upsert_organization(tx, np_name, model_fields, mistral_uuid)
+                    tx.run(f"MATCH (o:Organization {{id: $oid}}) MATCH (c:Case {{id: $cid}}) MERGE (o)-[:{rel}]->(c)",
+                           oid=nid, cid=case_id)
+                else:
+                    nid = insert_person(tx, np_name, 'pdf', model_fields, mistral_uuid)
+                    tx.run(f"MATCH (p:Person {{id: $pid}}) MATCH (c:Case {{id: $cid}}) MERGE (p)-[:{rel}]->(c)",
+                           pid=nid, cid=case_id)
 
             # ── Parties, lawyers, acts, hearings, docs, assets, log ────
             party_id_map = insert_case_parties(
-                tx, case_id, case.persons, person_id_map, party_addresses,
+                tx, case_id, case.persons, person_id_map,
             )
             insert_case_lawyers(
                 tx, case_id, case.persons, person_id_map,
@@ -329,7 +372,7 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
         case_id, doc_id_map = session.execute_write(_write)
 
     # ── PHASE 5: Backfill Document nodes with extracted PDF text ────────
-    logger.info(f"Starting PHASE 5: Backfilling Document nodes for {result['cnr']}")
+    logger.debug(f"Starting PHASE 5: Backfilling Document nodes for {result['cnr']}")
     with neo4j_driver.session() as session:
         def _update_docs(tx):
             for doc in case.documents:
@@ -345,7 +388,7 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
         session.execute_write(_update_docs)
 
     # ── PHASE 6: Embed summary → store on Case node ─────────────────────
-    logger.info(f"Starting PHASE 6: Embedding summary for {result['cnr']}")
+    logger.debug(f"Starting PHASE 6: Embedding summary for {result['cnr']}")
     if summary:
         try:
             vec = embed_texts_retry([summary])[0]
