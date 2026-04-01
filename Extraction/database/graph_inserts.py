@@ -1,62 +1,185 @@
 """
-Labels/graph_inserts.py
+database/graph_inserts.py
 All Neo4j write helpers for the pipeline.
 
-Key design decisions:
-  - No JSONB anywhere — model_fields dicts become flat node properties
-    via _set_flat_props().
-  - Asset attributes dict → individual properties on the Asset node.
-  - ADDRESS is stored on the Person / Organization node directly
-    (NOT on the PETITIONER_IN / RESPONDENT_IN relationship).
-  - ExtractionLog.missing_data_reasons kept as a JSON string because
-    the structure is genuinely variable.
+Architecture — TWO generic primitives:
+  _upsert_node()      : MERGE on unique key → dynamic SET all model fields.
+  _create_child_node(): CREATE node + link to parent → dynamic SET all model fields.
+
+Every entity function is a thin wrapper around these two primitives.
+The "for loop over model fields" lives in _model_to_props() which iterates
+model.model_dump() (includes extra='allow' fields from the LLM).
+
+NO hardcoded field names in entity functions — only label, merge-key, and
+minimal bootstrap identity props (name, is_judge, etc.).
 """
 import uuid
 import json as _json
 import logging
-from datetime import datetime
 
-from utils.helpers import normalize_name, org_type, clean_rel_type
+from utils.helpers import normalize_name, org_type, clean_rel_type, to_none
+from models.entities import (
+    Judge, User, Organization,
+    Court as CourtEntity,
+    Asset,
+    Document as EntityDocument,
+    CaseHearing,
+    Case as CaseEntity,
+)
 
 logger = logging.getLogger('pipeline')
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# Internal helpers
+# Value sanitization & serialization helpers
 # ══════════════════════════════════════════════════════════════════════════
 
-def _set_flat_props(tx, node_id: str, label: str, props: dict) -> None:
+def _clean_val(v):
     """
-    Set arbitrary flat properties on a node.
-    props = {'age': 45, 'occupation': 'Director', ...}
-    Skips None values — only sets what we actually have.
-    Serializes dicts/lists to JSON strings as Neo4j requires flat primitives.
-    Keys must come from our own code (no user-supplied keys) — safe for
-    dynamic Cypher construction.
+    Sanitize one value before writing to Neo4j:
+    - Strings → to_none() strips LLM placeholders ('N/A', 'Not mentioned', …)
+    - dict/list → JSON string  (Neo4j only supports flat primitives)
+    - None / empty → None  (caller skips)
+    """
+    if isinstance(v, str):
+        v = to_none(v)
+    if v is None:
+        return None
+    if isinstance(v, (dict, list)):
+        return _json.dumps(v, ensure_ascii=False)
+    return v
+
+
+def _model_to_props(model, exclude: set = None) -> dict:
+    """
+    Pydantic model → flat dict of sanitized, non-None properties.
+    model.model_dump() includes declared fields AND extra='allow' extras.
+    """
+    if model is None:
+        return {}
+    exclude = exclude or set()
+    out = {}
+    for k, v in model.model_dump().items():
+        if k in exclude:
+            continue
+        v = _clean_val(v)
+        if v is not None:
+            out[k] = v
+    return out
+
+
+def _dict_to_props(d: dict, exclude: set = None) -> dict:
+    """Raw dict → flat dict of sanitized, non-None properties."""
+    if not d:
+        return {}
+    exclude = exclude or set()
+    out = {}
+    for k, v in d.items():
+        if k in exclude:
+            continue
+        v = _clean_val(v)
+        if v is not None:
+            out[k] = v
+    return out
+
+
+def _set_props(tx, node_id: str, label: str, props: dict) -> None:
+    """
+    One dynamic Cypher SET for all props in one round-trip.
+    Keys come from validated model dumps — safe for dynamic Cypher.
+    No-ops when props is empty.
     """
     if not props:
         return
-        
-    clean = {}
-    for k, v in props.items():
-        if v is None:
-            continue
-        if isinstance(v, (dict, list)):
-            clean[k] = _json.dumps(v, ensure_ascii=False)
-        else:
-            clean[k] = v
-            
-    if not clean:
-        return
-    set_clause = ', '.join(f'n.{k} = ${k}' for k in clean)
+    set_clause = ', '.join(f'n.{k} = ${k}' for k in props)
     tx.run(
         f'MATCH (n:{label} {{id: $nid}}) SET {set_clause}',
-        nid=node_id, **clean,
+        nid=node_id, **props,
     )
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# 1. Act
+# Generic primitives — the two building blocks for every entity function
+# ══════════════════════════════════════════════════════════════════════════
+
+def _upsert_node(
+    tx,
+    label: str,
+    merge_key: str,
+    merge_val,
+    model=None,
+    bootstrap: dict = None,
+    model_exclude: set = None,
+    resolved_uuid: str = None,
+) -> str:
+    """
+    Generic MERGE-based upsert for deduplicated entities.
+
+    Step 1 — MERGE on merge_key; ON CREATE sets id + created_at only.
+    Step 2 — _set_props writes bootstrap props + ALL model fields in one call.
+
+    bootstrap    : static identity props (name, is_judge, …) not from model.
+    model        : Pydantic model with extra='allow'; all fields are written.
+    model_exclude: field names to skip from model (e.g. {'name','role_in_case'}).
+    resolved_uuid: skip MERGE, patch the existing node directly.
+    """
+    props = {}
+    if bootstrap:
+        props.update({k: v for k, v in bootstrap.items() if v is not None})
+    props.update(_model_to_props(model, exclude=model_exclude or set()))
+
+    if resolved_uuid:
+        _set_props(tx, resolved_uuid, label, props)
+        tx.run(
+            f"MATCH (n:{label} {{id: $id}}) SET n.updated_at = datetime()",
+            id=resolved_uuid,
+        )
+        return resolved_uuid
+
+    r = tx.run(
+        f"MERGE (n:{label} {{{merge_key}: $mk}}) "
+        f"ON CREATE SET n.id = $id, n.created_at = datetime() "
+        f"ON MATCH  SET n.updated_at = datetime() "
+        f"RETURN n.id AS id",
+        mk=merge_val, id=str(uuid.uuid4()),
+    )
+    nid = r.single()['id']
+    _set_props(tx, nid, label, props)
+    return nid
+
+
+def _create_child_node(
+    tx,
+    label: str,
+    parent_id: str,
+    rel_type: str,
+    model=None,
+    bootstrap: dict = None,
+    model_exclude: set = None,
+) -> str:
+    """
+    Generic CREATE for one-to-many children (Hearing, Document, Asset).
+
+    Step 1 — CREATE node with id + created_at only; link to parent.
+    Step 2 — _set_props writes bootstrap props + ALL model fields in one call.
+    """
+    node_id = str(uuid.uuid4())
+    tx.run(
+        f"MATCH (p {{id: $pid}}) "
+        f"CREATE (n:{label} {{id: $id, created_at: datetime()}}) "
+        f"CREATE (p)-[:{rel_type}]->(n)",
+        pid=parent_id, id=node_id,
+    )
+    props = {}
+    if bootstrap:
+        props.update({k: v for k, v in bootstrap.items() if v is not None})
+    props.update(_model_to_props(model, exclude=model_exclude or set()))
+    _set_props(tx, node_id, label, props)
+    return node_id
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# 1. Act  (no Pydantic model — name dedup with longest-name logic)
 # ══════════════════════════════════════════════════════════════════════════
 
 def upsert_act(tx, name: str) -> str | None:
@@ -67,7 +190,8 @@ def upsert_act(tx, name: str) -> str | None:
         MERGE (a:Act {name_norm: $norm})
         ON CREATE SET a.id = $id, a.name = $name, a.created_at = datetime()
         ON MATCH  SET a.name = CASE WHEN size($name) > size(a.name)
-                                    THEN $name ELSE a.name END
+                                    THEN $name ELSE a.name END,
+                      a.updated_at = datetime()
         RETURN a.id AS id""",
         norm=norm, name=name, id=str(uuid.uuid4()))
     return r.single()['id']
@@ -77,237 +201,143 @@ def upsert_act(tx, name: str) -> str | None:
 # 2. Court
 # ══════════════════════════════════════════════════════════════════════════
 
-def upsert_court(tx, case) -> str | None:
-    if not case.court_name:
+def upsert_court(tx, court_model: CourtEntity | None) -> str | None:
+    """
+    court_model: CourtEntity — all fields written dynamically.
+    """
+    if not court_model or not court_model.name:
         return None
-    r = tx.run("""
-        MERGE (c:Court {name: $name})
-        ON CREATE SET c.id = $id, c.court_type = $ct, c.court_code = $cc,
-                      c.district = $dist, c.state = $state,
-                      c.created_at = datetime()
-        ON MATCH  SET c.court_code = $cc, c.updated_at = datetime()
-        RETURN c.id AS id""",
-        name=case.court_name, id=str(uuid.uuid4()), ct=case.court_type,
-        cc=case.court_number, dist=case.district, state=case.state)
-    return r.single()['id']
+    bootstrap = {
+        'name': court_model.name,
+    }
+    return _upsert_node(
+        tx, 'Court', 'name', court_model.name,
+        model=court_model, bootstrap=bootstrap, model_exclude={'name'},
+    )
 
 
 # ══════════════════════════════════════════════════════════════════════════
 # 3. Person
-# model_fields dict keys → direct node properties
-# address is stored as p.address on the Person node (NOT on the relationship)
 # ══════════════════════════════════════════════════════════════════════════
 
 def insert_person(
     tx,
     name: str,
     name_source: str = 'json',
-    model_fields: dict | None = None,
+    person_model=None,          # User | Lawyer | any BaseModel
     resolved_uuid: str = None,
     address: str | None = None,
 ) -> str:
+    """person_model can be User, Lawyer, or any Pydantic model."""
     norm = normalize_name(name)
     if not norm:
         return str(uuid.uuid4())
-
-    if resolved_uuid:
-        # Node exists — patch new flat properties and address if we now know them
-        if address:
-            tx.run(
-                "MATCH (p:Person {id: $id}) SET p.address = $addr, p.updated_at = datetime()",
-                id=resolved_uuid, addr=address,
-            )
-        _set_flat_props(tx, resolved_uuid, 'Person', model_fields)
-        tx.run("MATCH (p:Person {id: $id}) SET p.updated_at = datetime()", id=resolved_uuid)
-        return resolved_uuid
-
-    r = tx.run("""
-        MERGE (p:Person {name_norm: $norm})
-        ON CREATE SET p.id = $id, p.name = $name, p.name_source = $src,
-                      p.is_judge = false, p.created_at = datetime()
-        ON MATCH  SET p.updated_at = datetime()
-        RETURN p.id AS id""",
-        norm=norm, id=str(uuid.uuid4()), name=name, src=name_source)
-    pid = r.single()['id']
-
-    if address:
-        tx.run(
-            "MATCH (p:Person {id: $id}) SET p.address = $addr",
-            id=pid, addr=address,
-        )
-    _set_flat_props(tx, pid, 'Person', model_fields)
-    return pid
+    bootstrap = {
+        'name'       : name,
+        'name_source': name_source,
+        'is_judge'   : False,
+        'address'    : address,   # explicit arg wins over model field
+    }
+    return _upsert_node(
+        tx, 'Person', 'name_norm', norm,
+        model=person_model, bootstrap=bootstrap,
+        model_exclude={'name', 'role_in_case'},
+        resolved_uuid=resolved_uuid,
+    )
 
 
 # ══════════════════════════════════════════════════════════════════════════
 # 4. Organization
-# model_fields dict keys → direct node properties
-# address is stored as o.address on the Organization node (NOT on the relationship)
 # ══════════════════════════════════════════════════════════════════════════
 
 def upsert_organization(
     tx,
     name: str,
-    model_fields: dict | None = None,
+    org_model=None,
     resolved_uuid: str = None,
     address: str | None = None,
 ) -> str | None:
     norm = normalize_name(name)
     if not norm:
         return None
-
-    if resolved_uuid:
-        if address:
-            tx.run(
-                "MATCH (o:Organization {id: $id}) SET o.address = $addr, o.updated_at = datetime()",
-                id=resolved_uuid, addr=address,
-            )
-        _set_flat_props(tx, resolved_uuid, 'Organization', model_fields)
-        tx.run("MATCH (o:Organization {id: $id}) SET o.updated_at = datetime()", id=resolved_uuid)
-        return resolved_uuid
-
-    r = tx.run("""
-        MERGE (o:Organization {name_norm: $norm})
-        ON CREATE SET o.id = $id, o.name = $name,
-                      o.organization_type = $otype,
-                      o.created_at = datetime()
-        ON MATCH  SET o.updated_at = datetime()
-        RETURN o.id AS id""",
-        norm=norm, id=str(uuid.uuid4()), name=name, otype=org_type(name))
-    oid = r.single()['id']
-
-    if address:
-        tx.run(
-            "MATCH (o:Organization {id: $id}) SET o.address = $addr",
-            id=oid, addr=address,
-        )
-    _set_flat_props(tx, oid, 'Organization', model_fields)
-    return oid
+    bootstrap = {
+        'name'             : name,
+        'organization_type': org_type(name),
+        'address'          : address,
+    }
+    return _upsert_node(
+        tx, 'Organization', 'name_norm', norm,
+        model=org_model, bootstrap=bootstrap,
+        model_exclude={'name', 'organization_type'},
+        resolved_uuid=resolved_uuid,
+    )
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# 5. Judge  (always a Person node — is_judge = true)
+# 5. Judge  (Person node with is_judge = true)
 # ══════════════════════════════════════════════════════════════════════════
 
 def upsert_judge(
     tx,
     name: str,
-    designation=None,
-    uid_number=None,
-    court=None,
-    model_fields: dict | None = None,
+    judge_model=None,
     resolved_uuid: str = None,
 ) -> str:
-    norm = normalize_name(name) if name else None
+    """
+    uid_number secondary lookup prevents duplicate nodes when the same judge
+    appears under variant name spellings.  All model fields — designation,
+    current_court, uid_number, bar_enrollment_number, status, LLM extras —
+    flow through _upsert_node with zero hardcoded field names.
+    """
+    norm       = normalize_name(name) if name else None
+    uid_number = getattr(judge_model, 'uid_number', None) if judge_model else None
 
-    if resolved_uuid:
-        tx.run("""MATCH (p:Person {id: $id})
-                   SET p.is_judge      = true,
-                       p.designation   = COALESCE($desig, p.designation),
-                       p.current_court = COALESCE($court, p.current_court),
-                       p.updated_at    = datetime()""",
-               id=resolved_uuid, desig=designation, court=court)
-        _set_flat_props(tx, resolved_uuid, 'Person', model_fields)
-        return resolved_uuid
-
-    if uid_number:
+    if uid_number and not resolved_uuid:
         row = tx.run(
             "MATCH (p:Person {uid_number: $uid}) RETURN p.id AS id LIMIT 1",
             uid=uid_number,
         ).single()
         if row:
-            tx.run("""MATCH (p:Person {id: $id})
-                       SET p.designation   = COALESCE($desig, p.designation),
-                           p.current_court = COALESCE($court, p.current_court),
-                           p.updated_at    = datetime()""",
-                   id=row['id'], desig=designation, court=court)
-            _set_flat_props(tx, row['id'], 'Person', model_fields)
-            return row['id']
+            resolved_uuid = row['id']
 
-    r = tx.run("""
-        MERGE (p:Person {name_norm: $norm})
-        ON CREATE SET p.id = $id, p.name = $name, p.name_source = 'pdf',
-                      p.is_judge = true, p.designation = $desig,
-                      p.uid_number = $uid, p.current_court = $court,
-                      p.created_at = datetime()
-        ON MATCH  SET p.is_judge      = true,
-                      p.designation   = COALESCE($desig,  p.designation),
-                      p.uid_number    = COALESCE($uid,    p.uid_number),
-                      p.current_court = COALESCE($court,  p.current_court),
-                      p.updated_at    = datetime()
-        RETURN p.id AS id""",
-        norm=norm, id=str(uuid.uuid4()), name=name,
-        desig=designation, uid=uid_number, court=court)
-    jid = r.single()['id']
-    _set_flat_props(tx, jid, 'Person', model_fields)
-    return jid
+    bootstrap = {'name': name, 'is_judge': True, 'name_source': 'pdf'}
+    return _upsert_node(
+        tx, 'Person', 'name_norm', norm,
+        model=judge_model, bootstrap=bootstrap, model_exclude={'name'},
+        resolved_uuid=resolved_uuid,
+    )
 
 
 # ══════════════════════════════════════════════════════════════════════════
 # 6. Case
 # ══════════════════════════════════════════════════════════════════════════
 
-def upsert_case(tx, case, court_id: str | None, outer: dict, summary=None, case_updates=None) -> str:
+def upsert_case(tx, case_model: CaseEntity, court_id: str | None, summary: str | None = None) -> str:
+    """
+    case_model: CaseEntity (extra='allow') → all dynamic keys are written to the database.
+    """
     r = tx.run("""
         MERGE (c:Case {cnr_number: $cnr})
-        ON CREATE SET
-            c.id = $id, c.case_number = $case_number,
-            c.filing_number = $filing_number,
-            c.registration_number = $reg_num,
-            c.case_type = $case_type,
-            c.status = $status, c.stage = $stage,
-            c.district = $district, c.state = $state,
-            c.filing_date = $filing_date,
-            c.registration_date = $registration_date,
-            c.first_hearing_date = $first_hearing_date,
-            c.last_hearing_date = $last_hearing_date,
-            c.next_hearing_date = $next_hearing_date,
-            c.decision_date = $decision_date,
-            c.disposal_date = $disposal_date,
-            c.filing_year = $filing_year,
-            c.type_of_disposal = $type_of_disposal,
-            c.in_favour_of = $in_favour_of,
-            c.search_summary = $summary,
-            c.created_at = datetime()
-        ON MATCH SET
-            c.status = $status,
-            c.last_hearing_date = $last_hearing_date,
-            c.decision_date = $decision_date,
-            c.search_summary = CASE WHEN $summary IS NOT NULL
-                             THEN $summary ELSE c.search_summary END,
-            c.updated_at = datetime()
+        ON CREATE SET c.id = $id, c.created_at = datetime()
+        ON MATCH  SET c.updated_at = datetime()
         RETURN c.id AS id""",
-        cnr=case.cnr_number, id=str(uuid.uuid4()),
-        case_number=case.case_number,
-        filing_number=case.filing_number, reg_num=case.registration_number,
-        case_type=case.case_type,
-        status=case.case_status, stage=case.case_stage,
-        district=case.district, state=case.state,
-        filing_date=str(case.filing_date) if case.filing_date else None,
-        registration_date=str(case.registration_date) if case.registration_date else None,
-        first_hearing_date=str(case.first_hearing_date) if case.first_hearing_date else None,
-        last_hearing_date=str(case.last_hearing_date) if case.last_hearing_date else None,
-        next_hearing_date=str(case.next_hearing_date) if case.next_hearing_date else None,
-        decision_date=str(case.decision_date) if case.decision_date else None,
-        disposal_date=str(case.disposal_date) if case.disposal_date else None,
-        filing_year=case.filing_year,
-        type_of_disposal=case.type_of_disposal,
-        in_favour_of=case.in_favour_of,
-        summary=summary,
-    )
+        cnr=case_model.cnr_number, id=str(uuid.uuid4()))
     case_id = r.single()['id']
-    
+
+    # Convert CaseEntity to props, injecting the manual summary if present
+    case_props = _model_to_props(case_model, exclude={'cnr_number'})
+    if summary:
+        case_props['search_summary'] = summary
+        
+    _set_props(tx, case_id, 'Case', case_props)
+
     if court_id:
         tx.run("""
-            MATCH (c:Case {id: $cid})
-            WITH c
+            MATCH (c:Case {id: $cid}) WITH c
             MATCH (ct:Court {id: $ctid})
             MERGE (c)-[:HEARD_IN]->(ct)""",
             cid=case_id, ctid=court_id)
-            
-    if case_updates:
-        _set_flat_props(tx, case_id, 'Case', case_updates)
-        
+
     return case_id
 
 
@@ -315,38 +345,23 @@ def upsert_case(tx, case, court_id: str | None, outer: dict, summary=None, case_
 # 7. Case parties (petitioners + respondents)
 # ══════════════════════════════════════════════════════════════════════════
 
-def insert_case_parties(
-    tx,
-    case_id: str,
-    persons,
-    person_id_map: dict,
-) -> dict:
-    """
-    Link petitioners / respondents to the Case node.
-    Returns party_id_map: {'petitioner::NAME': party_uuid, ...}
-    """
-    party_id_map: dict = {}
-
+def insert_case_parties(tx, case_id, persons, person_id_map) -> dict:
+    """persons : list[PersonModel]  (text_extraction.json_loader)"""
+    party_id_map = {}
     for p in persons:
         if p.role not in ('petitioner', 'respondent'):
             continue
         entity_id = person_id_map.get(f'{p.role}::{p.name}')
         if not entity_id:
             continue
-
-        rel        = clean_rel_type(p.role)
-        label      = 'Organization' if p.is_org else 'Person'
-        party_uuid = str(uuid.uuid4())
-
-        tx.run(f"""
-            MATCH (e:{label} {{id: $eid}})
-            WITH e
-            MATCH (c:Case {{id: $cid}})
-            MERGE (e)-[r:{rel}]->(c)""",
-            eid=entity_id, cid=case_id)
-
-        party_id_map[f'{p.role}::{p.name}'] = party_uuid
-
+        rel   = clean_rel_type(p.role)
+        label = 'Organization' if p.is_org else 'Person'
+        tx.run(
+            f"MATCH (e:{label} {{id: $eid}}) WITH e "
+            f"MATCH (c:Case {{id: $cid}}) MERGE (e)-[:{rel}]->(c)",
+            eid=entity_id, cid=case_id,
+        )
+        party_id_map[f'{p.role}::{p.name}'] = str(uuid.uuid4())
     return party_id_map
 
 
@@ -354,58 +369,39 @@ def insert_case_parties(
 # 8. Case lawyers (advocates)
 # ══════════════════════════════════════════════════════════════════════════
 
-def insert_case_lawyers(
-    tx,
-    case_id: str,
-    persons,
-    person_id_map: dict,
-    party_id_map: dict,
-    missing_advocates: list,
-) -> None:
-    def _link(person_id, side, display_name, name_source):
+def insert_case_lawyers(tx, case_id, persons, person_id_map, party_id_map, missing_advocates) -> None:
+    def _link(pid, side, dname, src):
         tx.run("""
-            MATCH (p:Person {id: $pid})
-            WITH p
+            MATCH (p:Person {id: $pid}) WITH p
             MATCH (c:Case {id: $cid})
             MERGE (p)-[r:ADVOCATE_FOR]->(c)
-            SET r.side = $side, r.display_name = $dname,
-                r.name_source = $src""",
-            pid=person_id, cid=case_id,
-            side=side, dname=display_name, src=name_source)
+            SET r.side = $side, r.display_name = $dname, r.name_source = $src""",
+            pid=pid, cid=case_id, side=side, dname=dname, src=src)
 
     for p in persons:
         if p.role not in ('petitioner_advocate', 'respondent_advocate'):
             continue
-        entity_id = person_id_map.get(f'{p.role}::{p.name}')
-        if not entity_id:
+        eid = person_id_map.get(f'{p.role}::{p.name}')
+        if not eid:
             continue
-        side = 'petitioner' if 'petitioner' in p.role else 'respondent'
-        _link(entity_id, side, p.name, 'json')
+        _link(eid, 'petitioner' if 'petitioner' in p.role else 'respondent', p.name, 'json')
 
     for adv in missing_advocates:
-        from utils.helpers import to_none
-        if isinstance(adv, str):
-            name = to_none(adv)
-            side = 'petitioner'
-        else:
-            name = to_none(adv.get('name'))
-            side = adv.get('side', 'petitioner')
-
+        name = to_none(adv) if isinstance(adv, str) else to_none(adv.get('name'))
+        side = 'petitioner' if isinstance(adv, str) else adv.get('side', 'petitioner')
         if not name:
             continue
-        pid = insert_person(tx, name, name_source='pdf')
-        _link(pid, side, name, 'pdf')
+        _link(insert_person(tx, name, name_source='pdf'), side, name, 'pdf')
 
 
 # ══════════════════════════════════════════════════════════════════════════
 # 9. Acts
 # ══════════════════════════════════════════════════════════════════════════
 
-def insert_case_acts(tx, case_id: str, acts) -> None:
+def insert_case_acts(tx, case_id, acts) -> None:
     for a in acts:
         tx.run("""
-            MATCH (c:Case {id: $cid})
-            WITH c
+            MATCH (c:Case {id: $cid}) WITH c
             MATCH (act:Act {name_norm: $norm})
             MERGE (c)-[r:INVOKES]->(act)
             SET r.section = $section""",
@@ -416,64 +412,64 @@ def insert_case_acts(tx, case_id: str, acts) -> None:
 # 10. Hearings
 # ══════════════════════════════════════════════════════════════════════════
 
-def insert_hearings(tx, case_id: str, hearings) -> None:
+def insert_hearings(tx, case_id, hearings) -> None:
+    """
+    CaseHearing (models.entities) — all fields via _model_to_props (dynamic).
+    HearingModel (json_loader)    — different attribute names; mapped manually.
+    """
     for h in hearings:
-        tx.run("""
-            MATCH (c:Case {id: $cid})
-            CREATE (h:Hearing {
-                id: $id,
-                date: $date,
-                last_hearing_date: $last,
-                next_hearing_date: $next,
-                purpose: $purpose,
-                next_purpose: $npurpose,
-                judge_designation: $jdesig,
-                business_notes: $notes,
-                nature_of_disposal: $disposal,
-                created_at: datetime()
+        if isinstance(h, CaseHearing):
+            _create_child_node(tx, 'Hearing', case_id, 'HAS_HEARING', model=h)
+        else:
+            diary = h.diary_note
+            props = _dict_to_props({
+                'date'              : str(h.hearing_date)              if h.hearing_date              else None,
+                'last_hearing_date' : str(h.last_hearing_date)         if h.last_hearing_date         else None,
+                'next_hearing_date' : str(h.next_hearing_date)         if h.next_hearing_date         else None,
+                'purpose'           : h.purpose,
+                'judge_designation' : h.judge_designation,
+                'business_notes'    : diary.business                   if diary else None,
+                'next_purpose'      : diary.next_purpose               if diary else None,
+                'nature_of_disposal': diary.nature_of_disposal         if diary else None,
             })
-            CREATE (c)-[:HAS_HEARING]->(h)""",
-            id=str(uuid.uuid4()), cid=case_id,
-            date=str(h.hearing_date) if h.hearing_date else None,
-            last=str(h.last_hearing_date) if h.last_hearing_date else None,
-            next=str(h.next_hearing_date) if h.next_hearing_date else None,
-            purpose=h.purpose, jdesig=h.judge_designation,
-            notes=h.diary_note.business,
-            npurpose=h.diary_note.next_purpose,
-            disposal=h.diary_note.nature_of_disposal)
+            _create_child_node(tx, 'Hearing', case_id, 'HAS_HEARING', bootstrap=props)
 
 
 # ══════════════════════════════════════════════════════════════════════════
 # 11. Documents
 # ══════════════════════════════════════════════════════════════════════════
 
-def insert_documents(tx, case_id: str, documents) -> dict:
-    """Insert Document nodes and return {storage_id: doc_uuid} map."""
-    id_map: dict = {}
+def insert_documents(tx, case_id, documents) -> dict:
+    """
+    EntityDocument (models.entities) — all fields dynamic.
+    DocumentModel  (json_loader)     — mapped manually (different shape).
+    Returns {storage_id: doc_uuid}.
+    """
+    id_map = {}
     for doc in documents:
-        doc_id = str(uuid.uuid4())
-        id_map[doc.storage_id or ''] = doc_id
-        tx.run("""
-            MATCH (c:Case {id: $cid})
-            CREATE (d:Document {
-                id: $id,
-                storage_id: $sid,
-                order_date: $odate,
-                order_number: $onum,
-                order_type: $otype,
-                extraction_status: 'pending',
-                created_at: datetime()
+        if isinstance(doc, EntityDocument):
+            doc_id = _create_child_node(
+                tx, 'Document', case_id, 'HAS_DOCUMENT',
+                model=doc,
+                bootstrap={'extraction_status': 'pending'},
+                model_exclude={'extraction_status'},
+            )
+        else:
+            props = _dict_to_props({
+                'storage_id'  : doc.storage_id,
+                'order_date'  : str(doc.order_date) if doc.order_date else None,
+                'order_number': doc.order_number,
+                'order_type'  : doc.order_type,
             })
-            CREATE (c)-[:HAS_DOCUMENT]->(d)""",
-            id=doc_id, cid=case_id,
-            sid=doc.storage_id,
-            odate=str(doc.order_date) if doc.order_date else None,
-            onum=doc.order_number,
-            otype=doc.order_type)
+            doc_id = _create_child_node(
+                tx, 'Document', case_id, 'HAS_DOCUMENT',
+                bootstrap={'extraction_status': 'pending', **props},
+            )
+        id_map[doc.storage_id or ''] = doc_id
     return id_map
 
 
-def update_document_text(tx, doc_id: str, full_text: str, method: str) -> None:
+def update_document_text(tx, doc_id, full_text, method) -> None:
     tx.run("""
         MATCH (d:Document {id: $id})
         SET d.full_text = $ft,
@@ -485,75 +481,67 @@ def update_document_text(tx, doc_id: str, full_text: str, method: str) -> None:
 
 # ══════════════════════════════════════════════════════════════════════════
 # 12. Assets
-# attributes dict keys → flat Asset node properties
 # ══════════════════════════════════════════════════════════════════════════
 
-def insert_assets(tx, case_id: str, assets: list, doc_id_map: dict) -> None:
-    VALID = {
-        'vehicle', 'plot', 'flat', 'commercial_property',
-        'bank_account', 'cheque', 'machinery', 'other',
-    }
+_VALID_ASSET_TYPES = {
+    'vehicle', 'plot', 'flat', 'commercial_property',
+    'bank_account', 'cheque', 'machinery', 'other',
+}
+
+
+def insert_assets(tx, case_id, assets, doc_id_map) -> None:
+    """
+    Asset (models.entities) — all fields dynamic; attributes dict exploded.
+    dict (legacy)            — _dict_to_props handles sanitization.
+    """
     for a in assets:
-        atype = (a.get('asset_type') or 'other').lower().strip()
-        if atype not in VALID:
-            atype = 'other'
-        src_doc    = doc_id_map.get(a.get('_source_storage_id', ''))
-        asset_id   = str(uuid.uuid4())
-        attributes = a.get('attributes') or {}
+        if isinstance(a, Asset):
+            attributes = a.attributes or {}
+            raw_type   = (a.asset_type or 'other').lower().strip()
+            asset_id   = _create_child_node(
+                tx, 'Asset', case_id, 'HAS_ASSET',
+                model=a,
+                bootstrap={'asset_type': raw_type if raw_type in _VALID_ASSET_TYPES else 'other'},
+                model_exclude={'attributes', 'asset_type'},
+            )
+        else:
+            attributes = a.get('attributes') or {}
+            raw_type   = (a.get('asset_type') or 'other').lower().strip()
+            props      = _dict_to_props(a, exclude={'attributes', '_source_storage_id', 'asset_type'})
+            props['asset_type'] = raw_type if raw_type in _VALID_ASSET_TYPES else 'other'
+            asset_id   = _create_child_node(tx, 'Asset', case_id, 'HAS_ASSET', bootstrap=props)
 
-        tx.run("""
-            MATCH (c:Case {id: $cid})
-            CREATE (asset:Asset {
-                id: $id,
-                asset_type: $atype,
-                identifier: $identifier,
-                description: $desc,
-                address: $addr,
-                estimated_value_inr: $value,
-                created_at: datetime()
+        # Explode attributes dict → individual flat node properties
+        if attributes:
+            _set_props(tx, asset_id, 'Asset', {
+                k: _clean_val(v) for k, v in attributes.items() if _clean_val(v) is not None
             })
-            CREATE (c)-[:HAS_ASSET]->(asset)""",
-            id=asset_id, cid=case_id, atype=atype,
-            identifier=a.get('identifier'),
-            desc=a.get('description'),
-            addr=a.get('address'),
-            value=a.get('estimated_value_inr'))
-
-        _set_flat_props(tx, asset_id, 'Asset', attributes)
 
 
 # ══════════════════════════════════════════════════════════════════════════
 # 13. Extraction log
 # ══════════════════════════════════════════════════════════════════════════
 
-def insert_extraction_log(
-    tx,
-    case_id: str,
-    cnr_number: str,
-    missing_log: list,
-) -> None:
+def insert_extraction_log(tx, case_id, cnr_number, missing_log) -> None:
     if not missing_log:
         return
     tx.run("""
         MATCH (c:Case {id: $cid})
         CREATE (log:ExtractionLog {
-            id: $id,
-            cnr_number: $cnr,
+            id: $id, cnr_number: $cnr,
             missing_data_reasons: $reasons,
             created_at: datetime()
         })
         CREATE (c)-[:HAS_LOG]->(log)""",
         id=str(uuid.uuid4()), cid=case_id,
-        cnr=cnr_number,
-        reasons=_json.dumps(missing_log))
+        cnr=cnr_number, reasons=_json.dumps(missing_log))
 
 
 # ══════════════════════════════════════════════════════════════════════════
 # 14. Case vector
 # ══════════════════════════════════════════════════════════════════════════
 
-def update_case_vector(tx, case_id: str, vector: list) -> None:
-    """Store the embedding for a Case node."""
+def update_case_vector(tx, case_id, vector) -> None:
     tx.run(
         "MATCH (c:Case {id: $id}) SET c.search_vector = $vec",
         id=case_id, vec=vector,
