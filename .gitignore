@@ -2,3 +2,5 @@
 .env
 manifest.csv
 pipeline.log
+/home/ankita/LegalAI/Extraction/models/__pycache__/entities.cpython-312.pyc
+/home/ankita/LegalAI/Extraction/models

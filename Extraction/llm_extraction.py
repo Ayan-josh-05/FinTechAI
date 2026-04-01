@@ -414,23 +414,54 @@ def run_llm_extraction(pdf_texts: dict, case) -> dict:
         'top_p'            : 0.95,
         'frequency_penalty': 0.0,
         'presence_penalty' : 0.0,
-        'stream'           : False,
+        'stream'           : True,
     }
 
-    resp = requests.post(EXTRACT_URL, headers=NVIDIA_HEADERS, json=payload, timeout=120)
+    resp = requests.post(EXTRACT_URL, headers=NVIDIA_HEADERS, json=payload, timeout=120, stream=True)
 
     if resp.status_code == 429:
         logger.warning('NVIDIA rate limit — retrying...')
         raise Exception('Rate limited')
     if resp.status_code != 200:
+        # For non-streaming error, we can read the text. For streaming, we might need to handle differently
+        # but here we just failed to start the stream.
         logger.error(f'NVIDIA API error {resp.status_code}: {resp.text[:300]}')
         raise Exception(f'API error {resp.status_code}')
 
-    raw = resp.json()['choices'][0]['message']['content'].strip()
+    full_response = ""
+    print(f"\n--- LLM Streaming Extraction for {case.cnr_number} ---\n")
+    for line in resp.iter_lines():
+        if line:
+            line_str = line.decode('utf-8')
+            if line_str.startswith('data: '):
+                data_str = line_str[6:]
+                if data_str.strip() == '[DONE]':
+                    break
+                try:
+                    data = _json.loads(data_str)
+                    if 'choices' in data and len(data['choices']) > 0:
+                        delta = data['choices'][0].get('delta', {})
+                        content = delta.get('content', '')
+                        if content:
+                            print(content, end='', flush=True)
+                            full_response += content
+                except _json.JSONDecodeError:
+                    continue
+    print("\n\n--- Streaming Complete ---\n")
+
+    raw = full_response.strip()
     if '```' in raw:
-        raw = raw.split('```')[1]
-        if raw.startswith('json'):
-            raw = raw[4:]
+        # Handle cases where LLM wraps JSON in markdown fences
+        parts = raw.split('```')
+        for part in parts:
+            part = part.strip()
+            if part.startswith('json'):
+                raw = part[4:].strip()
+                break
+            elif part.startswith('{'):
+                raw = part.strip()
+                break
+    
     raw = raw.strip()
 
     try:
@@ -444,7 +475,7 @@ def run_llm_extraction(pdf_texts: dict, case) -> dict:
         return result
     except _json.JSONDecodeError as e:
         logger.error(f'LLM returned invalid JSON for {case.cnr_number}: {e}')
-        logger.debug(f'Raw output: {raw[:500]}')
+        logger.debug(f'Raw output: {raw[:1000]}')
         raise
 
 

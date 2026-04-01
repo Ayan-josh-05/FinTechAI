@@ -1,0 +1,422 @@
+[
+    {
+        "case_details": {
+            "case_number": "10/2020",
+            "cnr_number": "MHPU010192702019",
+            "case_type": "R.C.A.",
+            "case_status": "Disposed",
+            "filing_number": "9895/2019",
+            "filing_year": "2019",
+            "filing_date": "2019-12-30",
+            "registration_date": "2020-01-03",
+            "decision_date": "2022-10-19"
+        },
+        "court_details": {
+            "court_name": "District Judge-14 and Additional Session Judge, Pune",
+            "district": "Pune",
+            "state": "Maharashtra",
+            "court_number": "53",
+            "bench": null,
+            "bench_nature": null
+        },
+        "party_details": {
+            "petitioners": [
+                "Kirti Vithaldas Zaveri etc",
+                "Poonam Kirti Zaveri"
+            ],
+            "respondents": [
+                "M/S IDEB Reality Pvt.Ltd",
+                "MS IDEB Reality Pvt.Ltd,",
+                "Avneet Bedi",
+                "Harkirat singh Bedi"
+            ]
+        },
+        "advocate_details": {
+            "petitioner_advocates": [
+                "Athavale Dilip Ramchandra"
+            ],
+            "respondent_advocates": null
+        },
+        "judge_details": {
+            "judge_name": "S. S. Gulhane"
+        },
+        "hearing_details": {
+            "first_hearing_date": "2020-01-07",
+            "last_hearing_date": "2022-10-19",
+            "next_hearing_date": "2022-10-19",
+            "case_stage": "Notice_Unready"
+        },
+        "act_details": {
+            "acts": [
+                {
+                    "act_name": "CODE OF CIVIL PROCEDURE",
+                    "section": "O-96r/w,O-XLI,Rule1"
+                }
+            ]
+        },
+        "order_details": {
+            "order_date": "2022-10-19",
+            "order_type": "order/judgement",
+            "order_number": "1",
+            "order_summary": "Appeal disposed as compromised between parties as per consent terms; no order as to costs; court fee refunded"
+        },
+        "additional_flags": {
+            "delay_condoned": null,
+            "application_type": null,
+            "mediation": true,
+            "settlement": true,
+            "involves_death": null,
+            "vehicle_number": null,
+            "fir_number": null,
+            "police_station": null
+        }
+    },
+    {
+        "case_details": {
+            "case_number": "1020/2020",
+            "cnr_number": "RJJT1A0015672020",
+            "case_type": "Execution",
+            "case_status": "Disposed",
+            "filing_number": "1567/2020",
+            "filing_year": "2020",
+            "filing_date": "2020-02-15",
+            "registration_date": "2020-02-15",
+            "decision_date": "2023-10-07"
+        },
+        "court_details": {
+            "court_name": "Commercial Court Complex Jaipur Metro II",
+            "district": "Jaipur Metro II",
+            "state": "Rajasthan",
+            "court_number": "4",
+            "bench": null,
+            "bench_nature": null
+        },
+        "party_details": {
+            "petitioners": [
+                "AU Small Finance Bank Ltd."
+            ],
+            "respondents": [
+                "Rahul Chaturvedi"
+            ]
+        },
+        "advocate_details": {
+            "petitioner_advocates": [
+                "Vikas Singh"
+            ],
+            "respondent_advocates": null
+        },
+        "judge_details": {
+            "judge_name": "Amit Kumar Kadwasra"
+        },
+        "hearing_details": {
+            "first_hearing_date": "2020-11-02",
+            "last_hearing_date": "2023-10-07",
+            "next_hearing_date": "2023-10-07",
+            "case_stage": "Compliance"
+        },
+        "act_details": {
+            "acts": [
+                {
+                    "act_name": "Civil Procedure Code",
+                    "section": "O21R11"
+                }
+            ]
+        },
+        "order_details": {
+            "order_date": "2023-10-07",
+            "order_type": "order/judgement",
+            "order_number": "1",
+            "order_summary": "Execution application rejected; decree held not executable"
+        },
+        "additional_flags": {
+            "delay_condoned": null,
+            "application_type": "Execution Application",
+            "mediation": null,
+            "settlement": null,
+            "involves_death": null,
+            "vehicle_number": null,
+            "fir_number": null,
+            "police_station": null
+        }
+    },
+    {
+        "case_details": {
+            "case_number": "14/2020",
+            "cnr_number": "MHOS010002382020",
+            "case_type": "Civil M.A.",
+            "case_status": "Disposed",
+            "filing_number": "178/2020",
+            "filing_year": "2020",
+            "filing_date": "2020-01-20",
+            "registration_date": "2020-01-20",
+            "decision_date": "2022-10-19"
+        },
+        "court_details": {
+            "court_name": "Principal District and Sessions Court Osmanabad",
+            "district": "Osmanabad",
+            "state": "Maharashtra",
+            "court_number": "5",
+            "bench": null,
+            "bench_nature": null
+        },
+        "party_details": {
+            "petitioners": [
+                "Maimuna Mustafa Shaikh"
+            ],
+            "respondents": [
+                "Mohamadali Mirajsab Shaikh",
+                "Vahida Mohamad Bashir Shaikh"
+            ]
+        },
+        "advocate_details": {
+            "petitioner_advocates": [
+                "Nalegaonkar PM"
+            ],
+            "respondent_advocates": [
+                "Pathan Imrankhan A"
+            ]
+        },
+        "judge_details": {
+            "judge_name": "G. P. Agrawal"
+        },
+        "hearing_details": {
+            "first_hearing_date": "2020-01-27",
+            "last_hearing_date": "2022-10-19",
+            "next_hearing_date": "2022-10-19",
+            "case_stage": "Reply/Say"
+        },
+        "act_details": {
+            "acts": [
+                {
+                    "act_name": "CODE OF CIVIL PROCEDURE",
+                    "section": "5"
+                }
+            ]
+        },
+        "order_details": {
+            "order_date": "2022-10-19",
+            "order_type": "order/judgement",
+            "order_number": "1",
+            "order_summary": "Application allowed; delay condoned subject to payment of Rs. 3000 cost to D.L.S.A. Osmanabad"
+        },
+        "additional_flags": {
+            "delay_condoned": true,
+            "application_type": "Condonation of delay",
+            "mediation": null,
+            "settlement": null,
+            "involves_death": null,
+            "vehicle_number": null,
+            "fir_number": null,
+            "police_station": null
+        }
+    },
+    {
+        "case_details": {
+            "case_number": "21/2019",
+            "cnr_number": "TNTT0D0002762019",
+            "case_type": "EP",
+            "case_status": "Disposed",
+            "filing_number": "304/2019",
+            "filing_year": "2019",
+            "filing_date": "2019-04-02",
+            "registration_date": "2019-04-08",
+            "decision_date": "2021-03-05"
+        },
+        "court_details": {
+            "court_name": "Sub Court, Tiruchendur",
+            "district": "Thoothukudi",
+            "state": "Tamil Nadu",
+            "court_number": "1",
+            "bench": null,
+            "bench_nature": null
+        },
+        "party_details": {
+            "petitioners": [
+                "M/s. Equitas small finance bank limited"
+            ],
+            "respondents": [
+                "S. Mariyappan",
+                "M. Viji"
+            ]
+        },
+        "advocate_details": {
+            "petitioner_advocates": [
+                "I. Abuthahir"
+            ],
+            "respondent_advocates": null
+        },
+        "judge_details": {
+            "judge_name": "M. Parameswari"
+        },
+        "hearing_details": {
+            "first_hearing_date": "2019-07-19",
+            "last_hearing_date": "2021-03-05",
+            "next_hearing_date": "2021-03-05",
+            "case_stage": "Batta"
+        },
+        "act_details": {
+            "acts": [
+                {
+                    "act_name": "CodeofCivilProcedure",
+                    "section": "O54,66,72and151sec"
+                }
+            ]
+        },
+        "order_details": {
+            "order_date": "2021-03-05",
+            "order_type": "order/judgement",
+            "order_number": "1",
+            "order_summary": "EP terminated as per memo filed"
+        },
+        "additional_flags": {
+            "delay_condoned": null,
+            "application_type": "Execution Petition",
+            "mediation": null,
+            "settlement": null,
+            "involves_death": null,
+            "vehicle_number": null,
+            "fir_number": null,
+            "police_station": null
+        }
+    },
+    {
+        "case_details": {
+            "case_number": "80/2020",
+            "cnr_number": "MHWR070003382020",
+            "case_type": "R.C.C.",
+            "case_status": "Disposed",
+            "filing_number": "309/2020",
+            "filing_year": "2020",
+            "filing_date": "2020-05-20",
+            "registration_date": "2020-05-20",
+            "decision_date": "2022-10-19"
+        },
+        "court_details": {
+            "court_name": "Civil Judge Jr. Dn. and JMFC, Pulgaon",
+            "district": "Wardha",
+            "state": "Maharashtra",
+            "court_number": "1",
+            "bench": null,
+            "bench_nature": null
+        },
+        "party_details": {
+            "petitioners": [
+                "State of Maharashtra"
+            ],
+            "respondents": [
+                "Nikesh Devraoji Kolhe"
+            ]
+        },
+        "advocate_details": {
+            "petitioner_advocates": [
+                "Asst Public Procecutor"
+            ],
+            "respondent_advocates": [
+                "Lanjewar D. D."
+            ]
+        },
+        "judge_details": {
+            "judge_name": "Vishnupriya D. Diffe"
+        },
+        "hearing_details": {
+            "first_hearing_date": "2020-05-20",
+            "last_hearing_date": "2022-10-19",
+            "next_hearing_date": "2022-10-19",
+            "case_stage": "Evidence Part Heard"
+        },
+        "act_details": {
+            "acts": [
+                {
+                    "act_name": "INDIAN PENAL CODE",
+                    "section": "363"
+                }
+            ]
+        },
+        "order_details": {
+            "order_date": "2022-10-19",
+            "order_type": "order/judgement",
+            "order_number": "1",
+            "order_summary": "Accused acquitted; not found guilty under IPC 363"
+        },
+        "additional_flags": {
+            "delay_condoned": null,
+            "application_type": "Criminal Case",
+            "mediation": null,
+            "settlement": null,
+            "involves_death": null,
+            "vehicle_number": null,
+            "fir_number": null,
+            "police_station": "Pulgaon Police Station"
+        }
+    },
+    {
+        "case_details": {
+            "case_number": "194/2019",
+            "cnr_number": "MHNS160010062019",
+            "case_type": "Cri.M.A.",
+            "case_status": "Disposed",
+            "filing_number": "972/2019",
+            "filing_year": "2019",
+            "filing_date": "2019-09-07",
+            "registration_date": "2019-09-07",
+            "decision_date": "2022-10-19"
+        },
+        "court_details": {
+            "court_name": "Civil and Criminal Court, Chandwad",
+            "district": "Nashik",
+            "state": "Maharashtra",
+            "court_number": "1",
+            "bench": null,
+            "bench_nature": null
+        },
+        "party_details": {
+            "petitioners": [
+                "Niraj Khanderao Bargal"
+            ],
+            "respondents": [
+                "Vaman Laxman Ahire and ors",
+                "Baburao laxman Hire",
+                "Gautam Waman Katare"
+            ]
+        },
+        "advocate_details": {
+            "petitioner_advocates": [
+                "Jadhav Rajendra C"
+            ],
+            "respondent_advocates": null
+        },
+        "judge_details": {
+            "judge_name": "Prasad B. Joshi"
+        },
+        "hearing_details": {
+            "first_hearing_date": "2019-09-07",
+            "last_hearing_date": "2022-10-19",
+            "next_hearing_date": null,
+            "case_stage": "Argument on Exh.____Unready"
+        },
+        "act_details": {
+            "acts": [
+                {
+                    "act_name": "INDIAN PENAL CODE",
+                    "section": "465,466,34"
+                }
+            ]
+        },
+        "order_details": {
+            "order_date": "2022-10-19",
+            "order_type": "order/judgement",
+            "order_number": "1",
+            "order_summary": "Application disposed as withdrawn"
+        },
+        "additional_flags": {
+            "delay_condoned": null,
+            "application_type": "Criminal Misc Application",
+            "mediation": null,
+            "settlement": null,
+            "involves_death": null,
+            "vehicle_number": null,
+            "fir_number": null,
+            "police_station": null
+        }
+    }
+]
