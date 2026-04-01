@@ -181,7 +181,8 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
     missing_log       = llm_result.get('missing_data_log', [])
     new_parties       = llm_result.get('new_parties', [])
 
-    result['summary_words']     = len(summary.split())
+    summary = str(summary)
+    result['summary_words'] = len(summary.split())
     result['assets']            = len(raw_assets)
     result['missing_advocates'] = len(missing_advocates)
     result['judges_found']      = len(judges_data)

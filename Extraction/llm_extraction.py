@@ -32,7 +32,7 @@ logger = logging.getLogger('pipeline')
 # Dynamic Prompt Generation
 # ══════════════════════════════════════════════════════════════════════════
 
-def generate_pdf_extraction_prompt(json_advocates, json_parties, case_manifest):
+def generate_pdf_extraction_prompt(json_advocates, json_parties, missing_fields):
     """
     Dynamically generates the extraction prompt based on entity models.
     """
@@ -44,160 +44,69 @@ def generate_pdf_extraction_prompt(json_advocates, json_parties, case_manifest):
     
     prompt = f"""\
 You are a legal data analyst for Indian district court cases.
-Documents may contain Hindi, English, or a mix of both.
-Always respond in English regardless of input language.
+Documents may contain Hindi, English, or a mix of both. Always respond in English.
 
-You will receive:
-  1. STRUCTURED CASE DATA — clean fields already extracted from JSON
-  2. PDF ORDER TEXT — raw text from the court order document(s)
-
-Your job is to generate a comprehensive search_summary AND extract 
-specific fields the JSON data does not contain.
+CONTEXT:
+Clean data has already been extracted from structured JSON. Your task is to:
+1. Generate a fact-dense English summary for semantic search (Search Summary).
+2. Extract specific MISSING fields and entities found ONLY in the PDF text.
 
 ═══════════════════════════════════════════════════════════════
-A. TARGET FIELDS FOR EXTRACTION
+A. SEARCH SUMMARY INSTRUCTIONS
 ═══════════════════════════════════════════════════════════════
-- If the document is from a **Lok Adalat**, extraction is special.
-- Treat **Board Members** or **Panel Members** as Judges. 
-- A case may have multiple Judges / Board Members across different orders.
-- Extract ALL unique judges found across all provided texts.
-
-═══════════════════════════════════════════════════════════════
-B. SEARCH SUMMARY
-═══════════════════════════════════════════════════════════════
-Generate a fact-dense English summary that captures EVERY important detail about this case. This summary is used for semantic search, so it must contain enough detail that any relevant query will match.
-
-There is no limit to the number of words a summary can have. Summary should be long enough to include ALL the details/facts.
-
-The summary must include all of the following in natural flowing sentences:
-
-IDENTITY:
-  - Case number, CNR, case type, current status
-  - Court name, district, state
-  - The reason this case happened, and how did proceedings take place, summary of full case document.
-
-TIMELINE:
-  - Filing date, first hearing, last hearing, decision date
-  - Duration in plain language (e.g. 'ran for 2 years 3 months')
-  - Total number of hearings
-  - Whether the case is still pending or has been decided
-
-PARTIES:
-  - All petitioners with their type (bank, company, individual)
-  - All respondents with their type
-  - All advocates and which side they represent
-  - Judge name and designation if found in PDF (Mostly found at the very end of the text extracted)
-
-LEGAL:
-  - All laws and sections invoked
-  - The legal nature of the dispute (loan default, possession, cheque bounce, criminal matter, property dispute, etc.)
-  - The final outcome or order passed
-  - Disposal type (dismissed, allowed, settled, acquitted, etc.)
-  - Who the decision was in favour of
-
-FINANCIAL (if present in PDF):
-  - Any amounts demanded or claimed (with both raw and numeric form)
-  - Any amounts ordered to be paid
-  - Loan amounts, outstanding dues, court fees
-  - Notices issued under specific sections and whether complied
-
-ASSETS (if present in PDF):
-  - Type of secured asset (flat, plot, vehicle, machinery, etc.)
-  - Asset identifier (flat number, vehicle registration, khasra number)
-  - Full address of the asset
-  - Whether possession was ordered and what type
-  - Court commissioner details if appointed
-
-PROCEEDINGS:
-  - Key events across the hearings in brief
-  - Whether the case was transferred between courts
-  - Whether it went to Lok Adalat or alternate dispute resolution
-  - Any notable patterns in the proceedings (repeated non-appearances, prolonged adjournments, court vacancies, default situations, etc.)
-
-IMPORTANT RULES FOR THE SUMMARY:
-  - Write in plain factual English sentences, not bullet points
-  - Include specific names, numbers, dates — not vague language
-  - If something is not mentioned in the data, skip it — never invent
-  - Length should match complexity — brief for simple cases, detailed for complex ones. Let content decide length.
-  - Do NOT use section headers inside the summary
-  - Do not miss any important facts
-  - Do not hallucinate
-  - Do not add any extra information that is not present in the PDF
-
-STRUCTURE REQUIREMENT (FOR CHUNKING):
-  - The summary MUST be divided into separate paragraphs corresponding to each section: IDENTITY, TIMELINE, PARTIES, LEGAL, FINANCIAL, ASSETS, and PROCEEDINGS.
-  - Each section should be written as ONE dense paragraph.
-  - Maintain the SAME ORDER of sections as defined above.
-  - Do NOT explicitly write section titles (like "IDENTITY:", "TIMELINE:").
-  - Ensure clear paragraph breaks between sections so that each paragraph can be used as an independent chunk in a RAG pipeline.
-  - Each paragraph must still follow natural flowing sentences and contain complete information for that section.
+Generate a fact-dense summary covering IDENTITY, TIMELINE, PARTIES, LEGAL, FINANCIAL, ASSETS, and PROCEEDINGS.
+- Write in plain factual English sentences (no bullets, no headers).
+- Divide into separate paragraphs for each category above.
+- Maintain natural flow; include specific names, dates, and amounts.
 
 ═══════════════════════════════════════════════════════════════
-C. TARGET FIELDS FOR EXTRACTION
+B. TARGET ENTITIES FOR EXTRACTION (PDF ONLY)
 ═══════════════════════════════════════════════════════════════
-Search the PDF carefully for the following entities.
+Extract the following ONLY if present in the PDF and NOT already known.
 
-1. CASE DATA PRESENCE MANIFEST (Fill 'Missing' fields if found in PDF)
-{case_manifest}
-Schema for Case Updates:
+1. MISSING CASE FIELDS (Source of Truth: PDF)
+The following fields are currently null/missing. Extract them if found:
+{missing_fields}
+
+Schema descriptions for these fields:
 {case_schema}
 
-2. JUDGES (PDF only)
-   Required Fields:
+2. JUDGES: Extract all presiding judges/board members mentioned.
 {judge_schema}
 
-3. ASSETS (PDF only)
-   Required Fields:
+3. ASSETS: Extract any secured assets, properties, or vehicles mentioned.
 {asset_schema}
 
-4. NEW PARTIES & ADDITIONAL INFO (PDF only)
-   JSON parties already known: {json_parties}
-   - For KNOWN parties: Extract additional details ( Aadhaar, PAN, Age, etc.)
-   - For UNKNOWN parties: Extract full details for any People or Organizations 
-     mentioned in the PDF that are NOT in the JSON list above.
-   
-   Schema Descriptions:
-   Person:
-{party_schema}
+4. NEW PARTIES & INFO: 
+- Known JSON parties: {json_parties}
+- For KNOWN parties: Extract additional info (PAN, Aadhaar, Age, etc.) if found.
+- For UNKNOWN parties: Extract full details for any person/org NOT listed above.
+Schemas:
+Person: {party_schema}
+Org: {org_schema}
 
-   Organization:
-{org_schema}
-
-5. MISSING ADVOCATES (PDF only)
-   JSON advocates already known: {json_advocates}
-   Extract ONLY those in PDF who are NOT in the above list.
+5. MISSING ADVOCATES: 
+- Known JSON advocates: {json_advocates}
+- Extract ONLY those advocates in PDF who are NOT in the above list.
 
 ═══════════════════════════════════════════════════════════════
-B. SEARCH SUMMARY
-═══════════════════════════════════════════════════════════════
-Generate a fact-dense English summary encompassing Identity, Timeline, Parties, Legal facts, Financial facts, Assets, and Proceedings. This summary is used for semantic search. Be thorough. No word limit.
-
-═══════════════════════════════════════════════════════════════
-C. CRITICAL RULES (Strict Compliance Required)
-═══════════════════════════════════════════════════════════════
-1. NO PLACEHOLDERS: If a field is NOT found in the PDF, do NOT return strings like "Not mentioned", "N/A", "None", or "Unknown". You MUST set the value to null.
-2. EXTRACTION LOGS: Every time a required field is null, you MUST add an entry to the "missing_data_log" explaining why (e.g. {{ "missing_object": "uid_number", "reason": "Not mentioned in the PDF" }}).
-3. TRUTH ONLY: Do not hallucinate. If it's not in the PDF, it's null.
+C. CRITICAL RULES
+1. DO NOT OVERWRITE: Data already present in the JSON (listed as 'Known') is the primary truth. Do not replace it with different values found in the PDF.
+2. NO PLACEHOLDERS: If a field is not found, return null. Do not use "Not found", "N/A", etc.
+3. EXTRACTION LOGS: Log every null field in "missing_data_log" with a reason.
 4. CONSISTENCY: Use ONLY the field names defined in the schemas above.
+═══════════════════════════════════════════════════════════════
 
-═══════════════════════════════════════════════════════════════
-RETURN THIS EXACT JSON SCHEMA — complete all fields:
-═══════════════════════════════════════════════════════════════
-    {{
+RETURN THIS EXACT JSON SCHEMA:
+{{
+  "search_summary": "fact-dense paragraph-based summary",
   "case_updates": {{ "field_name": "value" }},
   "missing_data_log": [ {{ "missing_object": "field_name", "reason": "why" }} ],
   "judges": [ {{ "name": "...", "designation": "...", "uid_number": "..." }} ],
   "assets": [ {{ "asset_type": "...", "identifier": "...", "attributes": {{}} }} ],
-  "new_parties": [
-     {{ "type": "person", "name": "...", "role": "...", "info": {{}} }},
-     {{ "type": "organization", "name": "...", "role": "...", "info": {{}} }}
-  ],
-  "party_additional_info": [
-     {{ "name": "...", "info": {{}} }}
-  ],
-  "missing_advocates": [
-     {{ "name": "...", "side": "petitioner/respondent" }}
-  ]
+  "new_parties": [ {{ "type": "person/organization", "name": "...", "role": "...", "info": {{}} }} ],
+  "party_additional_info": [ {{ "name": "...", "info": {{}} }} ],
+  "missing_advocates": [ {{ "name": "...", "side": "petitioner/respondent" }} ]
 }}
 """
     return prompt
@@ -275,97 +184,20 @@ def build_llm_context(pdf_texts: dict, case) -> tuple[str, str]:
         if p.role in ('petitioner', 'respondent')
     ]
     
+    # Filter manifest to only show missing fields
+    missing_fields = {k: v for k, v in case_manifest.items() if v is None}
+    
     filled_prompt = generate_pdf_extraction_prompt(
         json_advocates=json_advocates if json_advocates else '[]',
         json_parties  =_json.dumps(json_parties, ensure_ascii=False),
-        case_manifest = _json.dumps(case_manifest, indent=2)
+        missing_fields=_json.dumps(missing_fields, indent=2)
     )
 
-    lines = ['=== STRUCTURED CASE DATA ===']
+    lines = ['=== CASE CONTEXT ===']
     lines.append(f'CNR: {case.cnr_number}')
     lines.append(f'Case number: {case.case_number}')
-    lines.append(f'Case type: {case.case_type}')
-    lines.append(f'Status: {case.case_status}')
-    if case.case_stage:
-        lines.append(f'Stage: {case.case_stage}')
     lines.append(f'Court: {case.court_name}')
-    lines.append(f'Court number: {case.court_number}')
-    lines.append(f'District: {case.district}')
-    lines.append(f'State: {case.state}')
-    lines.append(f'Filing date: {case.filing_date}')
-    if case.registration_date:
-        lines.append(f'Registration date: {case.registration_date}')
-    lines.append(f'First hearing: {case.first_hearing_date}')
-    lines.append(f'Last hearing: {case.last_hearing_date}')
-    lines.append(f'Decision date: {case.decision_date}')
-    if case.disposal_date:
-        lines.append(f'Disposal date: {case.disposal_date}')
-    if case.in_favour_of:
-        lines.append(f'In favour of: {case.in_favour_of}')
-    if case.type_of_disposal:
-        lines.append(f'Disposal code: {case.type_of_disposal}')
-
-    if case.filing_date and case.decision_date:
-        days   = (case.decision_date - case.filing_date).days
-        years  = days // 365
-        months = (days % 365) // 30
-        if years > 0:
-            dur = f'{years} year{"s" if years > 1 else ""} {months} month{"s" if months != 1 else ""}'
-        else:
-            dur = f'{months} month{"s" if months != 1 else ""} ({days} days)'
-        lines.append(f'Case duration: {dur}')
-
-    lines.append(f'Total hearings: {len(case.hearings)}')
     lines.append('')
-
-    lines.append('Petitioners:')
-    for p in case.persons:
-        if p.role == 'petitioner':
-            otype = f' ({org_type(p.name)})' if p.is_org else ' (individual)'
-            rep   = f' through {p.rep_name}' if p.rep_name else ''
-            lines.append(f'  - {p.name}{otype}{rep}')
-
-    lines.append('Respondents:')
-    for p in case.persons:
-        if p.role == 'respondent':
-            otype = f' ({org_type(p.name)})' if p.is_org else ' (individual)'
-            rep   = f' through {p.rep_name}' if p.rep_name else ''
-            lines.append(f'  - {p.name}{otype}{rep}')
-
-    lines.append('Advocates (petitioner side):')
-    for p in case.persons:
-        if p.role == 'petitioner_advocate':
-            lines.append(f'  - {p.name}')
-
-    lines.append('Advocates (respondent side):')
-    for p in case.persons:
-        if p.role == 'respondent_advocate':
-            lines.append(f'  - {p.name}')
-
-    if case.acts:
-        lines.append('')
-        lines.append('Acts and sections invoked:')
-        for a in case.acts:
-            lines.append(f'  - {a.name} section {a.section or "(unspecified)"}')
-
-    if case.hearings:
-        lines.append('')
-        purposes = list(dict.fromkeys(h.purpose for h in case.hearings if h.purpose))
-        lines.append(f'Hearing purposes (in order): {" -> ".join(purposes)}')
-        last = case.hearings[-1]
-        if last.diary_note.business:
-            lines.append(f'Final order/diary note: {last.diary_note.business}')
-        if last.diary_note.nature_of_disposal:
-            lines.append(f'Nature of disposal: {last.diary_note.nature_of_disposal}')
-        notes = ' '.join(
-            h.diary_note.business for h in case.hearings if h.diary_note.business
-        ).lower()
-        if 'transfer' in notes or 'transferred' in notes:
-            lines.append('Case was transferred between courts during proceedings.')
-        if 'lok adalat' in notes or 'lokadalat' in notes:
-            lines.append('Case was referred to or settled before Lok Adalat.')
-        if 'default' in notes:
-            lines.append('Action or dismissal for default was noted in proceedings.')
 
     lines.append('')
     lines.append('=== PDF ORDER TEXT ===')
@@ -488,6 +320,28 @@ def run_llm_extraction(pdf_texts: dict, case) -> dict:
         result.setdefault('case_updates',        {})
         result.setdefault('new_parties',         [])
         
+        # Guardrail: Only allow updates for fields that were actually missing
+        case_manifest = {
+            'filing_number': case.filing_number,
+            'filing_date': case.filing_date,
+            'registration_date': case.registration_date,
+            'registration_number': case.registration_number,
+            'first_hearing_date': case.first_hearing_date,
+            'decision_date': case.decision_date,
+            'case_status': case.case_status,
+            'case_type': case.case_type,
+            'case_stage': case.case_stage,
+            'court_name': case.court_name,
+            'court_number': case.court_number,
+            'district': case.district,
+            'state': case.state,
+        }
+        missing_keys = {k for k, v in case_manifest.items() if v is None}
+        updates = result.get('case_updates', {})
+        if isinstance(updates, dict):
+            filtered_updates = {k: v for k, v in updates.items() if k in missing_keys}
+            result['case_updates'] = filtered_updates
+
         # Backward compatibility for 'search_summary' mapping
         if 'case_updates' in result and 'search_summary' in result['case_updates']:
              result['search_summary'] = result['case_updates']['search_summary']
