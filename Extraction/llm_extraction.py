@@ -257,7 +257,11 @@ def build_llm_context(pdf_texts: dict, case) -> tuple[str, str]:
         status      = case.case_status,
         filing_date = str(case.filing_date) if case.filing_date else None,
         disposal_date = str(case.disposal_date) if case.disposal_date else None,
-        stage       = case.case_stage
+        stage       = case.case_stage,
+        filing_number = case.filing_number,
+        registration_number = case.registration_number,
+        district    = case.district,
+        state       = case.state
     )
     case_manifest = get_presence_manifest(case_entity)
     
@@ -459,7 +463,7 @@ def run_llm_extraction(pdf_texts: dict, case) -> dict:
         elapsed = time.time() - start_time
         logger.info(f"LLM extraction complete for {case.cnr_number} in {elapsed:.2f}s. Total characters received: {len(full_response_text)}")
         
-    except requests.exceptions.Timeout:
+    except requests.exceptions.Timeout: 
         logger.warning(f"LLM request timed out for {case.cnr_number} after {time.time() - start_time:.2f}s")
         raise
     except Exception as e:

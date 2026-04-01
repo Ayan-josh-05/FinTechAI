@@ -145,7 +145,10 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
     outer, raw = load_json(json_path)
     case       = build_case_model(outer, raw)
     result['cnr'] = case.cnr_number
-
+    #print case filing number and case number
+    print(f"Case filing number: {case.filing_number}")
+    print(f"Case number: {case.case_number}")
+    
     # ── PHASE 2: PDF extraction ─────────────────────────────────────────
     logger.debug(f"Starting PHASE 2: PDF extraction for {result['cnr']}")
     pdf_texts   : dict = {}

@@ -5,7 +5,6 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from pdf_extractor import extract_pdf_text
-
 pdf_path = "/home/ue/LegalAI/Extraction/data/198_2020/documents/order_judgement_2021-12-11.pdf"
 if Path(pdf_path).exists():
     text, method = extract_pdf_text(pdf_path)
