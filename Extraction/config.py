@@ -21,6 +21,7 @@ NEO4J_PASSWORD = os.getenv('NEO4J_PASSWORD', 'password')
 # ── NVIDIA / LLM ───────────────────────────────────────────────────────────
 NVIDIA_API_KEY   = os.getenv('NVIDIA_API_KEY', 'nvapi-...')
 EXTRACTION_MODEL = 'mistralai/mistral-large-3-675b-instruct-2512'
+VALIDATION_MODEL = 'meta/llama-3.1-8b-instruct'
 EMBEDDING_MODEL  = 'nvidia/llama-3.2-nemoretriever-300m-embed-v1'
 EMBED_DIM        = 2048
 EXTRACT_URL      = 'https://integrate.api.nvidia.com/v1/chat/completions'
@@ -58,4 +59,4 @@ ORG_KEYWORDS = {
 }
 
 # ── Pipeline ───────────────────────────────────────────────────────────────
-N_CASES = 10 # number of pending cases to process per run
+N_CASES = 5 # number of pending cases to process per run

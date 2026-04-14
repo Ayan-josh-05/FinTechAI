@@ -101,6 +101,8 @@ C. CRITICAL RULES
 2. NO PLACEHOLDERS: If a field is not found, return null. Do not use "Not found", "N/A", etc.
 3. EXTRACTION LOGS: Log every null field in "missing_data_log" with a reason.
 4. CONSISTENCY: Use ONLY the field names defined in the schemas above.
+5. VERBATIM QUOTES: Every 'supporting_quote' MUST be a literal, exact substring from the PDF text. Do not fix typos, do not change casing, and do not rephrase. These are used for automated string matching; even a single character difference will cause validation to fail. 
+   Pick a quote that is at least 4-6 words long.
 ═══════════════════════════════════════════════════════════════
 
 RETURN THIS EXACT JSON SCHEMA:
@@ -108,12 +110,12 @@ RETURN THIS EXACT JSON SCHEMA:
   "search_summary": "fact-dense paragraph-based summary",
   "case_updates": {{ "field_name": "value" }},
   "missing_data_log": [ {{ "missing_object": "field_name", "reason": "why" }} ],
-  "judges": [ {{ "name": "...", "designation": "...", "uid_number": "...", "heard_from_date": "...", "heard_to_date": "..." }} ],
-  "assets": [ {{ "asset_type": "...", "identifier": "...", "attributes": {{}} }} ],
-  "new_parties": [ {{ "type": "person/organization", "name": "...", "role": "...", "info": {{}} }} ],
-  "party_additional_info": [ {{ "name": "...", "info": {{}} }} ],
-  "missing_advocates": [ {{ "name": "...", "side": "petitioner/respondent" }} ],
-  "additional_acts": [ {{ "name": "...", "section": "..." }} ]
+  "judges": [ {{ "name": "...", "designation": "...", "uid_number": "...", "heard_from_date": "...", "heard_to_date": "...", "supporting_quote": "verbatim text from PDF" }} ],
+  "assets": [ {{ "asset_type": "...", "identifier": "...", "attributes": {{}}, "supporting_quote": "verbatim text from PDF" }} ],
+  "new_parties": [ {{ "type": "person/organization", "name": "...", "role": "...", "info": {{}}, "supporting_quote": "verbatim text from PDF" }} ],
+  "party_additional_info": [ {{ "name": "...", "info": {{}}, "supporting_quote": "verbatim text from PDF" }} ],
+  "missing_advocates": [ {{ "name": "...", "side": "petitioner/respondent", "supporting_quote": "verbatim text from PDF" }} ],
+  "additional_acts": [ {{ "name": "...", "section": "...", "supporting_quote": "verbatim text from PDF" }} ]
 }}
 """
     return prompt
@@ -359,6 +361,16 @@ def run_llm_extraction(pdf_texts: dict, case) -> dict:
         if 'case_updates' in result and 'search_summary' in result['case_updates']:
              result['search_summary'] = result['case_updates']['search_summary']
         
+        logger.debug(
+            f"LLM raw counts for {case.cnr_number}: "
+            f"judges={len(result.get('judges',[]))}, "
+            f"assets={len(result.get('assets',[]))}, "
+            f"new_parties={len(result.get('new_parties',[]))}, "
+            f"missing_advocates={len(result.get('missing_advocates',[]))}, "
+            f"additional_acts={len(result.get('additional_acts',[]))}, "
+            f"party_additional_info={len(result.get('party_additional_info',[]))}, "
+            f"case_updates={len(result.get('case_updates',{}))}"
+        )
         return result
     except _json.JSONDecodeError as e:
         logger.error(f'LLM returned invalid JSON for {case.cnr_number}: {e}')

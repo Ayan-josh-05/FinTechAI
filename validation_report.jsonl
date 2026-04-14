@@ -1,0 +1,5 @@
+{"cnr": "MHMM110002112020", "timestamp": "2026-04-14T15:09:35.303200", "total_extracted": 3, "total_verified": 3, "total_rejected": 0, "accuracy_score": 100.0}
+{"cnr": "MHMM190046182019", "timestamp": "2026-04-14T15:14:21.298631", "total_extracted": 4, "total_verified": 2, "total_rejected": 2, "accuracy_score": 50.0}
+{"cnr": "MHMM110012472020", "timestamp": "2026-04-14T15:16:02.398751", "total_extracted": 1, "total_verified": 1, "total_rejected": 0, "accuracy_score": 100.0}
+{"cnr": "MHCC010014852019", "timestamp": "2026-04-14T15:19:16.189764", "total_extracted": 3, "total_verified": 0, "total_rejected": 3, "accuracy_score": 0.0}
+{"cnr": "RJJT1A0015672020", "timestamp": "2026-04-14T15:23:02.591908", "total_extracted": 3, "total_verified": 1, "total_rejected": 2, "accuracy_score": 33.33}

@@ -58,6 +58,8 @@ from llm_extraction import (
     run_batch_adjudicator,
     get_fuzzy_candidates,
 )
+from validate_llm.core import validate_case_delta
+from validate_llm.metrics import generate_validation_summary
 
 # ── Utils ───────────────────────────────────────────────────────────────────
 from utils.helpers import dedup_assets, to_none, clean_rel_type
@@ -174,6 +176,12 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
     # ── PHASE 3: LLM extraction ─────────────────────────────────────────
     logger.debug(f"Starting PHASE 3: LLM extraction for {result['cnr']}")
     llm_result        = run_llm_extraction(pdf_texts, case)
+    
+    # NEW: Targeted delta-validation
+    llm_result, val_stats = validate_case_delta(llm_result, pdf_texts)
+    generate_validation_summary(case.cnr_number, val_stats)
+    result['val_stats'] = val_stats   # carry forward for run-level reporting
+    
     summary           = llm_result.get('search_summary') or ''
     judges_data       = llm_result.get('judges', [])
     raw_assets        = llm_result.get('assets', [])
@@ -463,18 +471,45 @@ def main():
     pending = manifest[manifest['status'] == 'pending'].head(N_CASES)
     logger.info(f'Processing {len(pending)} pending cases')
 
+    # Validation report path (next to manifest)
+    import json as _json_mod
+    from datetime import datetime as _dt
+    val_report_path = MANIFEST_PATH.parent / 'validation_report.jsonl'
+
+    run_verified  = 0
+    run_extracted = 0
+
     for idx, row in tqdm(pending.iterrows(), total=len(pending), desc='Cases'):
         pdf_paths = row['pdf_paths'].split('|') if row['pdf_paths'] else []
         t0 = time.time()
         try:
             result  = process_case(row['json_path'], pdf_paths)
             elapsed = round(time.time() - t0, 1)
+
+            # ── Accumulate validation stats ────────────────────────────────
+            vs = result.get('val_stats', {})
+            run_verified  += vs.get('total_verified', 0)
+            run_extracted += vs.get('total_extracted', 0)
+
+            # Write one JSON line to validation_report.jsonl
+            report_entry = {
+                'cnr'            : result['cnr'],
+                'timestamp'      : _dt.now().isoformat(),
+                'total_extracted': vs.get('total_extracted', 0),
+                'total_verified' : vs.get('total_verified', 0),
+                'total_rejected' : vs.get('total_rejected', 0),
+                'accuracy_score' : vs.get('accuracy_score', 100.0),
+            }
+            with open(val_report_path, 'a', encoding='utf-8') as vf:
+                vf.write(_json_mod.dumps(report_entry) + '\n')
+
             logger.info(
                 f"[{result['cnr']}] done | "
                 f"{result['hearings']}h | "
                 f"{result['assets']} assets | "
                 f"{result['summary_words']}w | "
-                f"{elapsed}s"
+                f"{elapsed}s | "
+                f"val={vs.get('accuracy_score', 100.0):.1f}%"
             )
             manifest.at[idx, 'status']    = 'done'
             manifest.at[idx, 'error_msg'] = ''
@@ -491,6 +526,16 @@ def main():
     failed       = len(manifest[manifest['status'] == 'failed'])
     pending_left = len(manifest[manifest['status'] == 'pending'])
     logger.info(f'Done: {done}  Failed: {failed}  Remaining: {pending_left}')
+
+    # ── Run-level validation totals ────────────────────────────────────────
+    if run_extracted > 0:
+        run_accuracy = round((run_verified / run_extracted) * 100, 2)
+        logger.info(
+            f"VALIDATION TOTALS FOR THIS RUN — "
+            f"Verified: {run_verified}/{run_extracted} entities | "
+            f"Run Accuracy: {run_accuracy}%"
+        )
+        logger.info(f"Detailed report written to: {val_report_path}")
 
     if failed:
         for _, row in manifest[manifest['status'] == 'failed'].iterrows():
