@@ -32,7 +32,7 @@ logger = logging.getLogger('pipeline')
 # Dynamic Prompt Generation
 # ══════════════════════════════════════════════════════════════════════════
 
-def generate_pdf_extraction_prompt(json_advocates, json_parties, missing_fields):
+def generate_pdf_extraction_prompt(json_advocates, json_parties, json_acts, missing_fields):
     """
     Dynamically generates the extraction prompt based on entity models.
     """
@@ -64,7 +64,7 @@ B. TARGET ENTITIES FOR EXTRACTION (PDF ONLY)
 ═══════════════════════════════════════════════════════════════
 Extract the following ONLY if present in the PDF and NOT already known.
 
-1. MISSING CASE FIELDS (Source of Truth: PDF)
+1. MISSING CASE FIELDS
 The following fields are currently null/missing. Extract them if found:
 {missing_fields}
 
@@ -89,6 +89,12 @@ Org: {org_schema}
 - Known JSON advocates: {json_advocates}
 - Extract ONLY those advocates in PDF who are NOT in the above list.
 
+6. ADDITIONAL ACTS & SECTIONS:
+- Known JSON Acts: {json_acts}
+- Extract any ADDITIONAL Acts (and their sections) mentioned in the PDF not listed above.
+- Also, if you find sections for Known Acts that were missing from JSON, list them too!
+- Ensure section numbers are returned as a single comma-separated string (e.g. "302, 307, 34").
+
 ═══════════════════════════════════════════════════════════════
 C. CRITICAL RULES
 1. DO NOT OVERWRITE: Data already present in the JSON (listed as 'Known') is the primary truth. Do not replace it with different values found in the PDF.
@@ -102,11 +108,12 @@ RETURN THIS EXACT JSON SCHEMA:
   "search_summary": "fact-dense paragraph-based summary",
   "case_updates": {{ "field_name": "value" }},
   "missing_data_log": [ {{ "missing_object": "field_name", "reason": "why" }} ],
-  "judges": [ {{ "name": "...", "designation": "...", "uid_number": "..." }} ],
+  "judges": [ {{ "name": "...", "designation": "...", "uid_number": "...", "heard_from_date": "...", "heard_to_date": "..." }} ],
   "assets": [ {{ "asset_type": "...", "identifier": "...", "attributes": {{}} }} ],
   "new_parties": [ {{ "type": "person/organization", "name": "...", "role": "...", "info": {{}} }} ],
   "party_additional_info": [ {{ "name": "...", "info": {{}} }} ],
-  "missing_advocates": [ {{ "name": "...", "side": "petitioner/respondent" }} ]
+  "missing_advocates": [ {{ "name": "...", "side": "petitioner/respondent" }} ],
+  "additional_acts": [ {{ "name": "...", "section": "..." }} ]
 }}
 """
     return prompt
@@ -183,6 +190,10 @@ def build_llm_context(pdf_texts: dict, case) -> tuple[str, str]:
         for p in case.persons
         if p.role in ('petitioner', 'respondent')
     ]
+    json_acts = [
+        {'name': a.name, 'section': a.section}
+        for a in case.acts
+    ]
     
     # Filter manifest to only show missing fields
     missing_fields = {k: v for k, v in case_manifest.items() if v is None}
@@ -190,6 +201,7 @@ def build_llm_context(pdf_texts: dict, case) -> tuple[str, str]:
     filled_prompt = generate_pdf_extraction_prompt(
         json_advocates=json_advocates if json_advocates else '[]',
         json_parties  =_json.dumps(json_parties, ensure_ascii=False),
+        json_acts     =_json.dumps(json_acts, ensure_ascii=False),
         missing_fields=_json.dumps(missing_fields, indent=2)
     )
 
@@ -319,6 +331,7 @@ def run_llm_extraction(pdf_texts: dict, case) -> dict:
         result.setdefault('missing_data_log',    [])
         result.setdefault('case_updates',        {})
         result.setdefault('new_parties',         [])
+        result.setdefault('additional_acts',     [])
         
         # Guardrail: Only allow updates for fields that were actually missing
         case_manifest = {

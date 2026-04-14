@@ -180,6 +180,7 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
     missing_advocates = llm_result.get('missing_advocates', [])
     missing_log       = llm_result.get('missing_data_log', [])
     new_parties       = llm_result.get('new_parties', [])
+    additional_acts   = llm_result.get('additional_acts', [])
 
     summary = str(summary)
     result['summary_words'] = len(summary.split())
@@ -190,6 +191,36 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
     for asset in raw_assets:
         asset['_source_storage_id'] = next(iter(pdf_texts), None)
     deduped_assets = dedup_assets(raw_assets)
+
+    # ── Merge additional Acts ───────────────────────────────────────────
+    from text_extraction.json_loader import ActModel
+    from utils.helpers import normalize_name
+    act_map = {}
+    
+    for a in case.acts:
+        norm = normalize_name(a.name)
+        if norm not in act_map:
+            act_map[norm] = a
+        else:
+            s1 = act_map[norm].section or ""
+            s2 = a.section or ""
+            merged = ", ".join(sorted(list(set([s.strip() for s in (s1 + "," + s2).split(",") if s.strip()]))))
+            act_map[norm].section = merged
+            
+    for a in additional_acts:
+        name = to_none(a.get('name'))
+        section = to_none(a.get('section'))
+        if not name: continue
+        norm = normalize_name(name)
+        if norm in act_map:
+            s1 = act_map[norm].section or ""
+            s2 = section or ""
+            merged = ", ".join(sorted(list(set([s.strip() for s in (s1 + "," + s2).split(",") if s.strip()]))))
+            act_map[norm].section = merged
+        else:
+            act_map[norm] = ActModel(name=name, section=section)
+            
+    case.acts = list(act_map.values())
 
     # ── PHASE 4: Neo4j graph inserts ────────────────────────────────────
     logger.debug(f"Starting PHASE 4: Neo4j graph inserts for {result['cnr']}")
@@ -303,8 +334,12 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
             for j in judges_data:
                 j_name = j.get('name')
                 if not j_name: continue
+                
+                from_date = j.get('heard_from_date')
+                to_date = j.get('heard_to_date')
+                
                 # These ARE the concrete data fields from entities.py
-                model_fields = {k: v for k, v in j.items() if k != 'name'}
+                model_fields = {k: v for k, v in j.items() if k not in ('name', 'heard_from_date', 'heard_to_date')}
                 
                 # If LLM finds extra info NOT in the 14 models, it goes here
                 extra_info = info_lookup.get(j_name.lower()) or {}
@@ -327,9 +362,13 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
                     WITH p
                     MATCH (c:Case {id: $cid})
                     MERGE (p)-[r:JUDGE_IN]->(c)
-                    SET r.designation = $desig""",
+                    SET r.designation = COALESCE($desig, r.designation),
+                        r.heard_from_date = COALESCE($from_date, r.heard_from_date),
+                        r.heard_to_date = COALESCE($to_date, r.heard_to_date)""",
                     pid=jpid, cid=case_id,
-                    desig=j.get('designation'))
+                    desig=j.get('designation'),
+                    from_date=from_date,
+                    to_date=to_date)
             
             # ── New Parties ────────────────────────────────────────────
             for np in new_parties:

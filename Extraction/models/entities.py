@@ -35,6 +35,8 @@ class Judge(BaseModel):
     # retirement_date: Optional[str] = Field(None, description="Planned date of retirement.")
     bar_enrollment_number: Optional[str] = Field(None, description="Registration number with the Bar Council.")
     status: Optional[str] = Field(None, description="Current appointment status (Active/Retired/Transferred).")
+    heard_from_date: Optional[str] = Field(None, description="Start date of the period this judge heard THIS specific case.")
+    heard_to_date: Optional[str] = Field(None, description="End date of the period this judge heard THIS specific case.")
     # education: Optional[str] = Field(None, description="Educational qualifications (e.g. LL.B, LL.M).")
 
 class Lawyer(BaseModel):
