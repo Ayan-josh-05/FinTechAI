@@ -52,12 +52,73 @@ Clean data has already been extracted from structured JSON. Your task is to:
 2. Extract specific MISSING fields and entities found ONLY in the PDF text.
 
 ═══════════════════════════════════════════════════════════════
-A. SEARCH SUMMARY INSTRUCTIONS
+A. SEARCH SUMMARY
 ═══════════════════════════════════════════════════════════════
-Generate a fact-dense summary covering IDENTITY, TIMELINE, PARTIES, LEGAL, FINANCIAL, ASSETS, and PROCEEDINGS.
-- Write in plain factual English sentences (no bullets, no headers).
-- Divide into separate paragraphs for each category above.
-- Maintain natural flow; include specific names, dates, and amounts.
+Generate a fact-dense English summary that captures EVERY important
+detail about this case. This summary is used for semantic search,
+so it must contain enough detail that any relevant query will match.
+
+There is no limit to the number of words a summary can have. Summary should
+be long enough to include ALL the details/facts.
+
+The summary must include all of the following in natural flowing sentences:
+
+IDENTITY:
+  - Case number, CNR, case type, current status
+  - Court name, district, state
+  - The reason this case happened, and how did proceedings take place, summary of full case document.
+
+TIMELINE:
+  - Filing date, first hearing, last hearing, decision date
+  - Duration in plain language (e.g. 'ran for 2 years 3 months')
+  - Total number of hearings
+  - Whether the case is still pending or has been decided
+
+PARTIES:
+  - All petitioners with their type (bank, company, individual)
+  - All respondents with their type
+  - All advocates and which side they represent
+  - Judge name and designation if found in PDF (Mostly found at the very end of the text extracted)
+
+LEGAL:
+  - All laws and sections invoked
+  - The legal nature of the dispute (loan default, possession,
+    cheque bounce, criminal matter, property dispute, etc.)
+  - The final outcome or order passed
+  - Disposal type (dismissed, allowed, settled, acquitted, etc.)
+  - Who the decision was in favour of
+
+FINANCIAL (if present in PDF):
+  - Any amounts demanded or claimed (with both raw and numeric form)
+  - Any amounts ordered to be paid
+  - Loan amounts, outstanding dues, court fees
+  - Notices issued under specific sections and whether complied
+
+ASSETS (if present in PDF):
+  - Type of secured asset (flat, plot, vehicle, machinery, etc.)
+  - Asset identifier (flat number, vehicle registration, khasra number)
+  - Full address of the asset
+  - Whether possession was ordered and what type
+  - Court commissioner details if appointed
+
+PROCEEDINGS:
+  - Key events across the hearings in brief
+  - Whether the case was transferred between courts
+  - Whether it went to Lok Adalat or alternate dispute resolution
+  - Any notable patterns in the proceedings (repeated non-appearances,
+    prolonged adjournments, court vacancies, default situations, etc.)
+
+IMPORTANT RULES FOR THE SUMMARY:
+  - Write in plain factual English sentences, not bullet points
+  - Include specific names, numbers, dates — not vague language
+  - If something is not mentioned in the data, skip it — never invent
+  - Length should match complexity — brief for simple cases,
+    detailed for complex ones. Let content decide length.
+  - Do NOT use section headers inside the summary
+  - The summary should read like a dense fact sheet, not a story
+  - Do not miss any important facts.
+  - Do not hallucinate.
+  - Do not add any extra information that is not present in the PDF.
 
 ═══════════════════════════════════════════════════════════════
 B. TARGET ENTITIES FOR EXTRACTION (PDF ONLY)

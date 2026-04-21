@@ -59,4 +59,4 @@ ORG_KEYWORDS = {
 }
 
 # ── Pipeline ───────────────────────────────────────────────────────────────
-N_CASES = 5 # number of pending cases to process per run
+N_CASES = 20 # number of pending cases to process per run
