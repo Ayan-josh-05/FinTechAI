@@ -558,3 +558,40 @@ def update_case_vector(tx, case_id: str, vector: list) -> None:
         "MATCH (c:Case {id: $id}) SET c.search_vector = $vec",
         id=case_id, vec=vector,
     )
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# 15. Chunk nodes (sentence-level embeddings)
+# ══════════════════════════════════════════════════════════════════════════
+
+def insert_chunks(tx, case_id: str, cnr_number: str, chunks: list[dict]) -> None:
+    """
+    Insert Chunk nodes for sentence-level embeddings.
+    Each chunk dict must have: {text: str, chunk_index: int, vector: list[float]}
+    Links each Chunk to its parent Case via HAS_CHUNK.
+    """
+    for chunk in chunks:
+        chunk_id = str(uuid.uuid4())
+        tx.run("""
+            MATCH (c:Case {id: $cid})
+            CREATE (ch:Chunk {
+                id: $id,
+                cnr_number: $cnr,
+                text: $text,
+                chunk_index: $idx,
+                chunk_vector: $vec,
+                created_at: datetime()
+            })
+            CREATE (c)-[:HAS_CHUNK]->(ch)""",
+            id=chunk_id, cid=case_id, cnr=cnr_number,
+            text=chunk['text'], idx=chunk['chunk_index'],
+            vec=chunk['vector'])
+
+
+def delete_case_chunks(tx, case_id: str) -> None:
+    """Delete all existing Chunk nodes for a case (for re-processing)."""
+    tx.run("""
+        MATCH (c:Case {id: $cid})-[:HAS_CHUNK]->(ch:Chunk)
+        DETACH DELETE ch""",
+        cid=case_id)
+

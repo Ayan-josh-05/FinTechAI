@@ -42,6 +42,7 @@ from database.graph_inserts import (
     insert_documents, update_document_text,
     insert_assets, insert_extraction_log,
     update_case_vector,
+    insert_chunks, delete_case_chunks,
 )
 
 # ── Text extraction ─────────────────────────────────────────────────────────
@@ -449,6 +450,29 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
                 )
         except Exception as e:
             logger.warning(f'Vector store failed for {case.cnr_number}: {e}')
+
+    # ── PHASE 7: Sentence-level chunking → Chunk nodes ──────────────────
+    logger.debug(f"Starting PHASE 7: Sentence chunking for {result['cnr']}")
+    if summary:
+        try:
+            import spacy
+            _nlp = spacy.load('en_core_web_sm')
+            doc = _nlp(summary)
+            sentences = [s.text.strip() for s in doc.sents if len(s.text.strip()) >= 20]
+            if sentences:
+                chunk_vecs = embed_texts_retry(sentences)
+                chunks = [
+                    {'text': sent, 'chunk_index': i, 'vector': vec.tolist()}
+                    for i, (sent, vec) in enumerate(zip(sentences, chunk_vecs))
+                ]
+                with neo4j_driver.session() as session:
+                    def _write_chunks(tx):
+                        delete_case_chunks(tx, case_id)
+                        insert_chunks(tx, case_id, case.cnr_number, chunks)
+                    session.execute_write(_write_chunks)
+                logger.info(f'{case.cnr_number}: {len(chunks)} chunks created')
+        except Exception as e:
+            logger.warning(f'Chunking failed for {case.cnr_number}: {e}')
 
     return result
 
