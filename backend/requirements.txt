@@ -6,4 +6,7 @@ python-dotenv==1.0.1
 langchain
 langchain-nvidia-ai-endpoints
 langchain-community
+langchain-text-splitters
 tiktoken
+qdrant-client
+langchain-qdrant

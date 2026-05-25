@@ -36,24 +36,31 @@ router = APIRouter()
 
 # ── NVIDIA / LangChain config ────────────────────────────────────────────────
 
-NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
-EMBED_MODEL    = "nvidia/llama-3.2-nemoretriever-300m-embed-v1"
-LLM_MODEL      = "meta/llama-3.1-8b-instruct"
+NVIDIA_API_KEY  = os.getenv("NVIDIA_API_KEY", "")
+EMBED_MODEL     = "nvidia/nv-embedqa-e5-v5"
+
+# Small fast model — intent classification only (4-category, max 15 tokens output)
+INTENT_MODEL    = "meta/llama-3.1-8b-instruct"
+
+# Larger model — Cypher generation + synthesis.
+# Nemotron-70B is NVIDIA's own instruction-tuned 70B: better structured output,
+# stronger multi-document reasoning, more reliable Cypher syntax.
+REASONING_MODEL = "meta/llama-3.3-70b-instruct"
 
 try:
     from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings
 
     _intent_llm = ChatNVIDIA(
-        model=LLM_MODEL, api_key=NVIDIA_API_KEY,
+        model=INTENT_MODEL, api_key=NVIDIA_API_KEY,
         max_tokens=15, temperature=0.0,
     )
     _cypher_llm = ChatNVIDIA(
-        model=LLM_MODEL, api_key=NVIDIA_API_KEY,
-        max_tokens=600, temperature=0.0,
+        model=REASONING_MODEL, api_key=NVIDIA_API_KEY,
+        max_tokens=600, temperature=0.0,   # 0-temp for deterministic valid Cypher
     )
     _synthesis_llm = ChatNVIDIA(
-        model=LLM_MODEL, api_key=NVIDIA_API_KEY,
-        max_tokens=2048, temperature=0.3,
+        model=REASONING_MODEL, api_key=NVIDIA_API_KEY,
+        max_tokens=2048, temperature=0.2,  # slightly lower than before for factuality
     )
     _embeddings = NVIDIAEmbeddings(
         model=EMBED_MODEL, api_key=NVIDIA_API_KEY, truncate="END",
@@ -98,10 +105,32 @@ def _get_history(chat_id: str) -> str:
     return "\n".join(lines)
 
 
-def _save_turn(chat_id: str, query: str, answer: str) -> None:
+def _get_prev_cases(chat_id: str) -> str:
+    """
+    Return a summary of cases discussed in the last MEMORY_WINDOW turns.
+    Injected into the Cypher prompt so the LLM can resolve references like
+    'that case', 'the bank in the previous answer', etc.
+    """
+    turns = chat_memories.get(chat_id, [])[-MEMORY_WINDOW:]
+    cases = []
+    for t in turns:
+        for c in t.get("cases", []):
+            entry = f"- {c.get('case_number','?')} (CNR: {c.get('cnr','?')}): {c.get('summary','')[:200]}"
+            if entry not in cases:
+                cases.append(entry)
+    if not cases:
+        return "(none)"
+    return "\n".join(cases)
+
+
+def _save_turn(chat_id: str, query: str, answer: str, cases: list = None) -> None:
     if chat_id not in chat_memories:
         chat_memories[chat_id] = []
-    chat_memories[chat_id].append({"user": query, "assistant": answer})
+    chat_memories[chat_id].append({
+        "user": query,
+        "assistant": answer,
+        "cases": cases or [],   # list of {cnr, case_number, summary}
+    })
 
 # ── SSE helpers ───────────────────────────────────────────────────────────────
 
@@ -162,62 +191,76 @@ def classify_intent(query: str, history: str) -> str:
         return "lookup"
 
 
-# ── Stage 1a: Vector search ───────────────────────────────────────────────────
+# ── Stage 1: Qdrant RAG (Simple RAG on Document full-text chunks) ─────────────
 
-def vector_search(db, query_text: str, top_k: int = 5) -> list[tuple[str, float]]:
+def qdrant_rag(
+    query: str,
+    top_k: int = 20,
+    payload_filter: dict = None,
+) -> list[tuple[str, float, str]]:
     """
-    Embed query and search both vector indexes.
-    Returns [(case_id, score), ...] deduplicated and ranked.
+    Embed query → search Qdrant full-text chunks → return [(case_id, score, chunk_text)].
+    top_k=20 by default — we want broad candidate coverage before scoring.
+    payload_filter: optional Qdrant filter dict e.g. {"district": "Delhi"}
     """
     if not LANGCHAIN_OK:
         return []
     try:
-        vec = _embeddings.embed_query(query_text)
+        from backend.qdrant_store import get_qdrant, COLLECTION
+        from qdrant_client.http.models import Filter, FieldCondition, MatchValue
+
+        vec = _embeddings.embed_query(query)
+        qdrant = get_qdrant()
+
+        q_filter = None
+        if payload_filter:
+            conditions = [
+                FieldCondition(key=k, match=MatchValue(value=v))
+                for k, v in payload_filter.items() if v
+            ]
+            if conditions:
+                q_filter = Filter(must=conditions)
+
+        results = qdrant.query_points(
+            collection_name=COLLECTION,
+            query=vec,
+            limit=top_k,
+            with_payload=True,
+            query_filter=q_filter,
+        ).points
+        return [
+            (r.payload["case_id"], float(r.score), r.payload["chunk_text"])
+            for r in results
+            if r.payload and r.payload.get("case_id")
+        ]
     except Exception as e:
-        logger.error("Embedding failed: %s", e)
+        logger.error("Qdrant RAG failed: %s", e)
         return []
 
-    seen: dict[str, float] = {}
 
-    # Case-level index
+def qdrant_case_chunks(case_id: str, query: str, top_k: int = 3) -> list[str]:
+    """
+    Retrieve the most query-relevant chunks for a specific case from Qdrant.
+    Used during enrichment to give the synthesis LLM the best passages.
+    """
+    if not LANGCHAIN_OK:
+        return []
     try:
-        rows = db.run(
-            """
-            CALL db.index.vector.queryNodes('case_search_vector', $topK, $vec)
-            YIELD node AS c, score
-            RETURN c.id AS case_id, score
-            ORDER BY score DESC
-            """,
-            topK=top_k, vec=vec,
-        ).data()
-        for r in rows:
-            cid, s = r["case_id"], r["score"]
-            if cid and (cid not in seen or s > seen[cid]):
-                seen[cid] = float(s)
-    except Exception as e:
-        logger.warning("Case vector search failed: %s", e)
+        from backend.qdrant_store import get_qdrant, COLLECTION
+        from qdrant_client.http.models import Filter, FieldCondition, MatchValue
 
-    # Chunk-level index
-    try:
-        rows = db.run(
-            """
-            CALL db.index.vector.queryNodes('chunk_vector', $topK, $vec)
-            YIELD node AS ch, score
-            MATCH (c:Case)-[:HAS_CHUNK]->(ch)
-            RETURN c.id AS case_id, score
-            ORDER BY score DESC
-            """,
-            topK=top_k * 2, vec=vec,
-        ).data()
-        for r in rows:
-            cid, s = r["case_id"], r["score"]
-            if cid and (cid not in seen or s > seen[cid]):
-                seen[cid] = float(s)
+        vec = _embeddings.embed_query(query)
+        results = get_qdrant().query_points(
+            collection_name=COLLECTION,
+            query=vec,
+            limit=top_k,
+            with_payload=["chunk_text"],
+            query_filter=Filter(must=[FieldCondition(key="case_id", match=MatchValue(value=case_id))]),
+        ).points
+        return [r.payload["chunk_text"] for r in results if r.payload]
     except Exception as e:
-        logger.warning("Chunk vector search failed: %s", e)
-
-    ranked = sorted(seen.items(), key=lambda x: x[1], reverse=True)[:top_k]
-    return ranked  # [(case_id, score), ...]
+        logger.warning("qdrant_case_chunks failed for %s: %s", case_id, e)
+        return []
 
 
 # ── Stage 1b: LLM-generated Cypher ───────────────────────────────────────────
@@ -327,18 +370,21 @@ MATCH (c:Case)
 WHERE toLower(c.case_type) CONTAINS '<keyword>'
 RETURN c.id AS case_id, c.cnr_number AS cnr, c.case_number AS case_number, c.search_summary AS summary LIMIT 10
 
-# Keyword in document text (chunks):
-MATCH (c:Case)-[:HAS_CHUNK]->(ch:Chunk)
-WHERE toLower(ch.text) CONTAINS '<keyword>'
-RETURN DISTINCT c.id AS case_id, c.cnr_number AS cnr, c.case_number AS case_number, c.search_summary AS summary LIMIT 10
-
 # Keyword in hearing notes or purpose:
 MATCH (c:Case)-[:HAS_HEARING]->(h:Hearing)
 WHERE toLower(h.business_notes) CONTAINS '<keyword>' OR toLower(h.purpose) CONTAINS '<keyword>'
 RETURN DISTINCT c.id AS case_id, c.cnr_number AS cnr, c.case_number AS case_number, c.search_summary AS summary LIMIT 10
 
+# For follow-up questions: if user refers to a specific case discussed before,
+# use that CNR number directly to traverse its relationships:
+MATCH (c:Case {{cnr_number: '<CNR_FROM_PREV_CASES>'}})-[r]-(n)
+RETURN c.id AS case_id, c.cnr_number AS cnr, c.case_number AS case_number, c.search_summary AS summary LIMIT 10
+
 Conversation history (may be empty):
 {history}
+
+Previously discussed cases (use CNR numbers above to resolve follow-up references):
+{prev_cases}
 
 User query: {query}
 
@@ -375,14 +421,15 @@ def _extract_cypher(text: str) -> str:
     return text
 
 
-def cypher_search(db, query: str, history: str) -> list[tuple[str, float]]:
-    """Stage 1b: Generate Cypher via LLM, validate, run, self-correct once on failure."""
+def cypher_search(db, query: str, history: str, prev_cases: str = "") -> list[tuple[str, float]]:
+    """Stage 2: Generate Cypher via LLM (with full context), validate, run, self-correct once."""
     if not LANGCHAIN_OK:
         return []
     try:
         prompt = _CYPHER_PROMPT.format(
             schema=_GRAPH_SCHEMA,
             history=history[-400:] if history else "(none)",
+            prev_cases=prev_cases or "(none)",
             query=query,
         )
         raw = _cypher_llm.invoke(prompt).content
@@ -412,6 +459,50 @@ def cypher_search(db, query: str, history: str) -> list[tuple[str, float]]:
     except Exception as e:
         logger.warning("Cypher search failed entirely: %s", e)
         return []
+
+
+# ── Stage 3: Agentic Self-Reflection ─────────────────────────────────────────
+
+_CONFIDENCE_PROMPT = """\
+You are a legal research assistant evaluating retrieved case relevance.
+
+User question: {query}
+
+Retrieved case summaries:
+{brief_summaries}
+
+Do these cases contain enough information to answer the user's question?
+
+If YES — respond with exactly the word: SUFFICIENT
+If NO — respond with a single improved search query that would find more relevant cases.
+     Just the query text, nothing else. No explanation.
+
+Response:"""
+
+
+def agentic_self_reflect(query: str, candidate_summaries: list[str]) -> str | None:
+    """
+    Stage 3: Ask the LLM to evaluate retrieved candidates.
+    Returns None if sufficient, or a refined query string if not.
+    Max 1 retry in pipeline to keep latency bounded.
+    """
+    if not LANGCHAIN_OK or not candidate_summaries:
+        return None
+    try:
+        brief = "\n".join(
+            f"- {s[:200]}" for s in candidate_summaries[:7]
+        )
+        prompt = _CONFIDENCE_PROMPT.format(query=query, brief_summaries=brief)
+        resp = _cypher_llm.invoke(prompt).content.strip()
+        if resp.upper() == "SUFFICIENT" or not resp:
+            return None
+        # It's a refined query
+        logger.info("Self-reflect: refining query to: %s", resp[:100])
+        return resp
+    except Exception as e:
+        logger.warning("Self-reflect failed: %s", e)
+        return None
+
 
 
 # ── Stage 2: Full subgraph enrichment ────────────────────────────────────────
@@ -465,18 +556,15 @@ def _clean_names(lst: list) -> list[str]:
     return out
 
 
-def enrich_case(db, case_id: str) -> dict:
-    """Pull complete subgraph for a single case."""
+def enrich_case(db, case_id: str, query: str = "") -> dict:
+    """Pull complete subgraph for a single case + best chunks from Qdrant."""
     try:
         row = db.run(_ENRICH_CYPHER, cid=case_id).single()
         if not row:
             return {}
         d = dict(row)
-        try:
-            d["chunks"] = [r["text"] for r in db.run(_CHUNK_CYPHER, cid=case_id).data()
-                           if r.get("text")]
-        except Exception:
-            d["chunks"] = []
+        # Fetch query-relevant chunks from Qdrant (not Neo4j HAS_CHUNK anymore)
+        d["chunks"] = qdrant_case_chunks(case_id, query, top_k=3) if query else []
         for f in ("judges", "petitioners", "respondents", "advocates",
                   "witnesses", "victims", "complainants", "acts"):
             d[f] = _clean_names(d.get(f) or [])
@@ -623,60 +711,92 @@ def stream_synthesis(context: str, query: str, history: str) -> Generator[str, N
 
 def run_pipeline(db, chat_id: str, query: str, shared: dict):
     """
-    Full multilevel RAG pipeline. Yields SSE strings throughout.
-    Writes enriched cases + final answer into `shared` dict.
-    """
-    history = _get_history(chat_id)
+    5-stage agentic RAG pipeline. Yields SSE strings throughout.
 
-    # Stage 0: Intent
+    Stage 0: Intent classification (8B LLM)
+    Stage 1: Qdrant RAG — full-text chunk retrieval (Simple RAG foundation)
+    Stage 2: LLM Cypher — structural graph traversal with prev-case context
+    Stage 3: Agentic self-reflection — refine if underconfident (max 1 retry)
+    Stage 4: Full subgraph enrichment (Neo4j) + Qdrant chunk retrieval per case
+    Stage 5: Streaming synthesis (Nemotron-70B)
+    """
+    history    = _get_history(chat_id)
+    prev_cases = _get_prev_cases(chat_id)
+
+    # ─ Stage 0: Intent ──────────────────────────────────────────────────
     yield _thinking("Classifying your query…")
     intent = classify_intent(query, history)
     logger.info("Intent: %s | query: %s", intent, query[:80])
 
-    # Stage 1: Retrieval — always run both sources.
-    # Track each source separately so we can apply a cross-signal confidence bonus.
-    vec_scores: dict[str, float] = {}
-    cyp_scores: dict[str, float] = {}
+    def _do_retrieval(q: str) -> tuple[dict[str, float], dict[str, str]]:
+        """Run Stage 1 (Qdrant) + Stage 2 (Cypher) for query q.
+        Returns (case_scores, case_chunks) where case_chunks[case_id] = chunk_text."""
+        vec_scores: dict[str, float] = {}
+        chunk_hits: dict[str, str]   = {}   # case_id -> best chunk for quick summary
 
-    yield _thinking("Running semantic vector search…")
-    for cid, s in vector_search(db, query, top_k=5):
-        vec_scores[cid] = s
+        # Stage 1: Qdrant Simple RAG
+        for cid, score, chunk_text in qdrant_rag(q, top_k=20):
+            if cid not in vec_scores or score > vec_scores[cid]:
+                vec_scores[cid] = score
+                chunk_hits[cid] = chunk_text
 
-    yield _thinking("Generating graph traversal query…")
-    for cid, s in cypher_search(db, query, history):
-        # Cypher is query-specific structural search — boost its base score
-        cyp_scores[cid] = max(s, 0.88)
+        # Stage 2: LLM Cypher (with full context)
+        cyp_scores: dict[str, float] = {}
+        for cid, s in cypher_search(db, q, history, prev_cases):
+            cyp_scores[cid] = max(s, 0.88)
 
-    # Merge: cases found by BOTH sources get a confidence bonus (0.97)
-    # This ensures the Cypher-targeted case ranks above purely semantic matches.
-    case_scores: dict[str, float] = {}
-    all_ids = set(vec_scores) | set(cyp_scores)
-    for cid in all_ids:
-        v = vec_scores.get(cid, 0.0)
-        c = cyp_scores.get(cid, 0.0)
-        if v > 0 and c > 0:
-            case_scores[cid] = 0.97   # found by both — highest confidence
-        elif c > 0:
-            case_scores[cid] = c      # Cypher-only: 0.88
-        else:
-            case_scores[cid] = v      # vector-only: natural score
+        # Score merge with cross-signal boost
+        merged: dict[str, float] = {}
+        for cid in set(vec_scores) | set(cyp_scores):
+            v = vec_scores.get(cid, 0.0)
+            c = cyp_scores.get(cid, 0.0)
+            if v > 0 and c > 0:
+                merged[cid] = 0.97        # found by both — highest confidence
+            elif c > 0:
+                merged[cid] = c           # Cypher-only: 0.88
+            else:
+                merged[cid] = v           # vector-only: natural score
+        return merged, chunk_hits
 
-    # Pick top-N
-    top_ids = sorted(case_scores, key=lambda x: case_scores[x], reverse=True)[:TOP_N_CASES]
+    # ─ Stage 1+2: Initial retrieval ─────────────────────────────────────
+    yield _thinking("Searching document database (RAG)…")
+    case_scores, chunk_hits = _do_retrieval(query)
 
-    if not top_ids:
+    yield _thinking("Running structured graph query…")
+    # (Cypher already ran inside _do_retrieval; thinking event for UX)
+
+    if not case_scores:
         yield _sse("response", "No relevant cases found for your query. Please try rephrasing.")
         shared["enriched"] = []
         return
 
-    # Stage 2: Enrich
-    yield _thinking(f"Enriching {len(top_ids)} case(s) with full relationship data…")
-    enriched = [enrich_case(db, cid) for cid in top_ids]
-    enriched = [c for c in enriched if c]  # drop failed enrichments
+    # ─ Stage 3: Agentic self-reflection ───────────────────────────────
+    top_ids    = sorted(case_scores, key=lambda x: case_scores[x], reverse=True)[:TOP_N_CASES]
+    cand_summs = [chunk_hits.get(cid, "") for cid in top_ids]
+
+    yield _thinking("Evaluating retrieval quality…")
+    refined_query = agentic_self_reflect(query, cand_summs)
+    if refined_query:
+        yield _thinking(f"Broadening search with refined query…")
+        refined_scores, refined_hits = _do_retrieval(refined_query)
+        # Merge refined results in with slightly lower weight
+        for cid, s in refined_scores.items():
+            if cid not in case_scores:
+                case_scores[cid] = s * 0.9   # slight discount for retry results
+            else:
+                case_scores[cid] = max(case_scores[cid], s)
+            if cid not in chunk_hits:
+                chunk_hits[cid] = refined_hits.get(cid, "")
+        top_ids = sorted(case_scores, key=lambda x: case_scores[x], reverse=True)[:TOP_N_CASES]
+
+    # ─ Stage 4: Full subgraph enrichment ──────────────────────────────
+    yield _thinking(f"Enriching {len(top_ids)} case(s) with graph relationships…")
+    enriched = [enrich_case(db, cid, query) for cid in top_ids]
+    enriched = [c for c in enriched if c]
     shared["enriched"] = enriched
     shared["scores"]   = case_scores
 
-    # Stage 3: Synthesis
+    # ─ Stage 5: Synthesis ────────────────────────────────────────────
     yield _thinking("Synthesising your answer…")
     context = build_context(enriched, case_scores)
 
@@ -687,6 +807,17 @@ def run_pipeline(db, chat_id: str, query: str, shared: dict):
         yield token_event
 
     shared["answer"] = full_answer
+
+    # Save turn with case refs for context-aware follow-up Cypher
+    case_refs = [
+        {
+            "cnr":         c.get("cnr", ""),
+            "case_number": c.get("case_number", ""),
+            "summary":     (c.get("summary") or "")[:200],
+        }
+        for c in enriched
+    ]
+    _save_turn(chat_id, query, full_answer, cases=case_refs)
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -759,8 +890,7 @@ def chat(request: ChatMessageRequest):
         yield _metadata_event(job_id, sources, enriched)
         yield "data: [DONE]\n\n"
 
-        # Save turn to memory
-        _save_turn(chat_id, query, shared.get("answer", ""))
+        # Memory is saved inside run_pipeline (with case refs for follow-up Cypher)
         chat_sessions[chat_id]["messages"].append({
             "id": job_id, "role": "assistant",
             "output": shared.get("answer", ""),
