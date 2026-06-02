@@ -23,6 +23,10 @@ app.include_router(search.router, prefix="/search", tags=["Search"])
 from .routes.querySearch import semantic_search_v2
 app.include_router(semantic_search_v2.router, prefix="/semantic-search", tags=["Semantic Search"])
 
+from .routes.querySearch import strategy_buddy
+app.include_router(strategy_buddy.router, prefix="/legal-buddy", tags=["Legal Buddy"])
+
+
 @app.on_event("shutdown")
 def shutdown_event():
     close_db()

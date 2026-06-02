@@ -10,3 +10,4 @@ langchain-text-splitters
 tiktoken
 qdrant-client
 langchain-qdrant
+rapidfuzz

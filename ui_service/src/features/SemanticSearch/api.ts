@@ -1004,7 +1004,7 @@ export const semanticSearchApi = {
   createSearchJob: async (
     params: SemanticSearchRequest,
   ): Promise<{ chatId: string; metadata?: Record<string, unknown> }> => {
-    const response = await api.post('/semantic-search', params)
+    const response = await api.post('/legal-buddy', params)
     const chatId =
       response.data?.chatId ?? response.data?.chat_id ?? response.data?.jobId ?? response.data?.job_id ?? response.data?.id ?? null
 
@@ -1036,7 +1036,7 @@ export const semanticSearchApi = {
     abortController?: AbortController
   ): Promise<SemanticSearchResultById> => {
     const accessToken = Cookies.get('access_token');
-    const url = `${API_BASE_URL}/semantic-search/chat`;
+    const url = `${API_BASE_URL}/legal-buddy/chat`;
 
     const headers: HeadersInit = {
       Accept: 'text/event-stream',
