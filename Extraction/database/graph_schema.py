@@ -10,7 +10,7 @@ Relationship types: PETITIONER_IN, RESPONDENT_IN, ADVOCATE_FOR,
                     HAS_HEARING, HAS_DOCUMENT, HAS_LOG
 """
 import logging
-from database.db_connection import neo4j_driver
+from shared.database import neo4j_driver
 
 logger = logging.getLogger('pipeline')
 

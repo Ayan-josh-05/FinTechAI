@@ -3,10 +3,9 @@ Shared Qdrant client singleton for LegalAI.
 Collection: legalai_doc_chunks
 """
 import logging
-import os
+from shared.config import QDRANT_URL
 from functools import lru_cache
 
-from dotenv import load_dotenv
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import (
     Distance,
@@ -14,10 +13,8 @@ from qdrant_client.http.models import (
     PayloadSchemaType,
 )
 
-load_dotenv()
 logger = logging.getLogger(__name__)
 
-QDRANT_URL  = os.getenv("QDRANT_URL", "http://localhost:6333")
 COLLECTION  = "legalai_doc_chunks"
 VECTOR_DIM  = 1024  # nvidia/nv-embedqa-e5-v5 output dim
 

@@ -17,7 +17,7 @@ from datetime import date
 
 import dateutil.parser
 
-from config import ORG_KEYWORDS, DISTRICT_OVERRIDES
+from shared.config import ORG_KEYWORDS, DISTRICT_OVERRIDES
 
 logger = logging.getLogger('pipeline')
 

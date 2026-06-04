@@ -1,6 +1,6 @@
 """
-strategy_buddy.py
------------------
+backend/routes/querySearch/agent.py
+------------------------------------
 LegalAI – Agentic Search Buddy
 
 Architecture
@@ -27,19 +27,18 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import re
 import uuid
+from shared.config import NVIDIA_API_KEY, NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD, QDRANT_URL, QDRANT_COLLECTION, AGENT_MODEL, EMBEDDING_MODEL
+EMBED_MODEL = EMBEDDING_MODEL
 from datetime import datetime
 from typing import Any, Generator
 
-from dotenv import load_dotenv
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import sys
 
-load_dotenv()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 if not logger.handlers:
@@ -52,16 +51,6 @@ if not logger.handlers:
 router = APIRouter()
 
 # ── Config ────────────────────────────────────────────────────────────────────
-
-NVIDIA_API_KEY    = os.getenv("NVIDIA_API_KEY", "")
-NEO4J_URI         = os.getenv("NEO4J_URI", "bolt://localhost:7687")
-NEO4J_USER        = os.getenv("NEO4J_USER", "neo4j")
-NEO4J_PASSWORD    = os.getenv("NEO4J_PASSWORD", "password")
-QDRANT_URL        = os.getenv("QDRANT_URL", "http://localhost:6333")
-QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "legalai_doc_chunks")
-
-AGENT_MODEL   = "mistralai/mistral-large-3-675b-instruct-2512"
-EMBED_MODEL   = "nvidia/nv-embedqa-e5-v5"
 
 MEMORY_WINDOW = 8     # conversation turns kept in context
 TOP_K_QDRANT  = 40    # Qdrant candidates before dedup + rank
@@ -273,13 +262,14 @@ Format the blocks exactly like this, always at the very end of your response in 
 """
 
 # ── Session store ─────────────────────────────────────────────────────────────
+# Shared with history.py — imported from there to keep a single source of truth.
 # chat_id → {
 #   "agent":      compiled langgraph agent,
 #   "history":    list[BaseMessage]  (trimmed to MEMORY_WINDOW*2 pairs),
 #   "created_at": str,
 # }
 
-_sessions: dict[str, dict] = {}
+from backend.routes.querySearch.history import _sessions
 
 # ── Cypher safety guard ───────────────────────────────────────────────────────
 
@@ -584,9 +574,9 @@ class ChatRequest(BaseModel):
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
-@router.post("")
+@router.post("/session")
 def create_session(request: CreateSessionRequest):
-    """Create a new buddy session. Returns a chat_id."""
+    """Create a new search session. Returns a chat_id."""
     chat_id = str(uuid.uuid4())
     _get_or_create_session(chat_id)
     return {"chatId": chat_id}
@@ -594,7 +584,7 @@ def create_session(request: CreateSessionRequest):
 
 @router.post("/chat")
 def buddy_chat(request: ChatRequest):
-    """Send a message to the buddy. Returns a streaming SSE response."""
+    """Send a message to the search buddy. Returns a streaming SSE response."""
     chat_id = request.chat_id
     query   = request.query.strip()
 
@@ -618,48 +608,13 @@ def buddy_chat(request: ChatRequest):
     )
 
 
-@router.get("/chat/history")
-def buddy_history(chat_id: str, page: int = 1, page_size: int = 20):
-    """Return conversation history for a session."""
-    session = _sessions.get(chat_id)
-    if not session:
-        return {"results": [], "page": page, "page_size": page_size, "total": 0}
-
-    messages = session.get("history", [])
-    turns, i = [], 0
-    while i < len(messages):
-        msg = messages[i]
-        if msg.__class__.__name__ == "HumanMessage":
-            ai_text = (messages[i + 1].content
-                       if i + 1 < len(messages) and
-                          messages[i + 1].__class__.__name__ == "AIMessage"
-                       else "")
-            turns.append({"id": str(uuid.uuid4()), "role": "user",
-                           "query": msg.content, "output": ai_text})
-            i += 2
-        else:
-            i += 1
-
-    start = (page - 1) * page_size
-    return {"results": turns[start:start + page_size],
-            "page": page, "page_size": page_size, "total": len(turns)}
+@router.post("/chat/stop")
+def stop_streaming(request: dict):
+    """No-op stop endpoint for frontend compatibility."""
+    return {"message": "stopped"}
 
 
-@router.delete("/session/{chat_id}")
-def delete_session(chat_id: str):
-    """Clean up a session and free its memory."""
-    _sessions.pop(chat_id, None)
-    return {"deleted": chat_id}
-
-@router.get("/user-queries")
-def get_user_queries(query_type: str = "recent", page: int = 1, page_size: int = 5):
-    """
-    Dummy endpoint for frontend compatibility. 
-    Returns an empty list of user queries to prevent 404 errors.
-    """
-    return {
-        "results": [],
-        "page": page,
-        "page_size": page_size,
-        "total": 0
-    }
+@router.get("/suggestions")
+def get_suggestions(query: str = ""):
+    """Stub suggestions endpoint for frontend compatibility."""
+    return []

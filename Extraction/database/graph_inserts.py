@@ -16,7 +16,7 @@ import json as _json
 import logging
 from datetime import datetime
 
-from utils.helpers import normalize_name, org_type, clean_rel_type
+from Extraction.utils.helpers import normalize_name, org_type, clean_rel_type
 
 logger = logging.getLogger('pipeline')
 
@@ -383,7 +383,7 @@ def insert_case_lawyers(
         _link(entity_id, side, p.name, 'json')
 
     for adv in missing_advocates:
-        from utils.helpers import to_none
+        from Extraction.utils.helpers import to_none
         if isinstance(adv, str):
             name = to_none(adv)
             side = 'petitioner'
@@ -434,7 +434,7 @@ def insert_hearings(tx, case_id: str, hearings) -> None:
             })
             CREATE (c)-[:HAS_HEARING]->(h)""",
             id=str(uuid.uuid4()), cid=case_id,
-            date=str(h.hearing_date) if h.hearing_date else None,
+            date=str(h.hearing_date or h.last_hearing_date) if (h.hearing_date or h.last_hearing_date) else None,
             last=str(h.last_hearing_date) if h.last_hearing_date else None,
             next=str(h.next_hearing_date) if h.next_hearing_date else None,
             purpose=h.purpose, jdesig=h.judge_designation,

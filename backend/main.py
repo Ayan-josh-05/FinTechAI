@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .database import close_db
+from shared.database import close_db
 from .routes.detailedInfo import case, court
 from .routes import auth
-from .routes.querySearch import search
+from .routes.querySearch.router import router as search_router
 
 app = FastAPI(title="LegalAI API", description="API server for LegalAI frontend UI")
 
@@ -18,13 +18,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 app.include_router(case.router, prefix="/entity/case", tags=["Case"])
 app.include_router(court.router, prefix="/entity/court", tags=["Court"])
-app.include_router(search.router, prefix="/search", tags=["Search"])
-
-from .routes.querySearch import semantic_search_v2
-app.include_router(semantic_search_v2.router, prefix="/semantic-search", tags=["Semantic Search"])
-
-from .routes.querySearch import strategy_buddy
-app.include_router(strategy_buddy.router, prefix="/legal-buddy", tags=["Legal Buddy"])
+app.include_router(search_router, prefix="/search", tags=["Search"])
 
 
 @app.on_event("shutdown")

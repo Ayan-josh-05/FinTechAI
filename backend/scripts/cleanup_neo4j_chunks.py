@@ -6,20 +6,14 @@ Run ONCE after build_qdrant_index.py has completed successfully:
     python -m backend.scripts.cleanup_neo4j_chunks
 """
 import logging
-import os
 import sys
+from shared.config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from dotenv import load_dotenv
 
-load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
-
-NEO4J_URI      = os.getenv("NEO4J_URI",      "bolt://localhost:7687")
-NEO4J_USER     = os.getenv("NEO4J_USER",     "neo4j")
-NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "password")
 
 
 def main():

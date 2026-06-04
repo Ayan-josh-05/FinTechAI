@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Dict
-from backend.database import get_db
+from shared.database import get_db
 import uuid
 
 from .schemas import LegalDiscoverySearchRequest, LegalDiscoverySearchResponse

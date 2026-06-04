@@ -8,27 +8,21 @@ Run once (idempotent — skips already-indexed document chunks):
 Re-run after new cases are added to keep the index fresh.
 """
 import logging
-import os
 import sys
 import uuid
+from shared.config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD, NVIDIA_API_KEY, EMBEDDING_MODEL
 from pathlib import Path
 
 # Make sure the project root is on the path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from dotenv import load_dotenv
 
-load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-NEO4J_URI      = os.getenv("NEO4J_URI",      "bolt://localhost:7687")
-NEO4J_USER     = os.getenv("NEO4J_USER",     "neo4j")
-NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "password")
-NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
-EMBED_MODEL    = "nvidia/nv-embedqa-e5-v5"
+EMBED_MODEL    = EMBEDDING_MODEL
 
 CHUNK_SIZE    = 800    # chars per chunk
 CHUNK_OVERLAP = 100    # overlap between consecutive chunks

@@ -2,7 +2,7 @@ import os
 import logging
 import pandas as pd
 from neo4j import GraphDatabase
-from config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
+from shared.config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

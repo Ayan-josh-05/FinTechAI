@@ -14,16 +14,16 @@ from pathlib import Path
 import requests
 from tenacity import retry, wait_exponential, stop_after_attempt
 
-from models.entities import (
+from Extraction.models.entities import (
     User, Judge, Lawyer, Case, Organization, Court, Act, 
     CaseHearing, Asset, Document,
     get_presence_manifest, get_model_schema_description, get_compact_schema_description
 )
 
-from config import (
+from shared.config import (
     EXTRACTION_MODEL, EXTRACT_URL, NVIDIA_HEADERS,
 )
-from utils.helpers import org_type
+from Extraction.utils.helpers import org_type
 
 logger = logging.getLogger('pipeline')
 
@@ -134,6 +134,15 @@ Schema descriptions for these fields:
 
 2. JUDGES: Extract all presiding judges/board members mentioned.
 {judge_schema}
+
+NOTE ON COLLECTIVE BODIES: If the case was decided by a collective body
+(e.g. Lok Adalat, Gram Panchayat, Arbitration Committee, Village Council)
+rather than a single named individual — place the body name EXACTLY as it
+appears in the PDF in the `name` field (e.g. "Lok Adalat, Pune",
+"Gram Nyayalaya No. 3, Khandwa", "Arbitration Committee, Nagpur").
+Do NOT enumerate individual member names. Use the `designation` field
+to briefly describe the body type in plain English (e.g. "Lok Adalat Panel",
+"Gram Panchayat", "Arbitration Board").
 
 3. ASSETS: Extract any secured assets, properties, or vehicles mentioned.
 {asset_schema}
@@ -527,7 +536,7 @@ def get_fuzzy_candidates(tx, name: str, entity_type: str) -> list[dict]:
     Query Neo4j for candidate nodes that might match *name*.
     """
     logger.debug(f"Starting get_fuzzy_candidates for name: {name}, type: {entity_type}")
-    from utils.helpers import normalize_name
+    from Extraction.utils.helpers import normalize_name
     norm     = normalize_name(name)
     fragment = norm[:12]
     if not norm:

@@ -20,11 +20,11 @@ import orjson
 import pandas as pd
 from pydantic import BaseModel, model_validator
 
-from utils.helpers import (
+from Extraction.utils.helpers import (
     to_none, parse_date, is_organization, org_type,
     clean_party_name, clean_district, dedup_advocates,
 )
-from config import JUNK_ACTS, FINANCIAL_CASE_TYPES
+from shared.config import JUNK_ACTS, FINANCIAL_CASE_TYPES
 
 logger = logging.getLogger('pipeline')
 

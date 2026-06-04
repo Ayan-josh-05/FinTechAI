@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from neo4j import Session
-from backend.database import get_db
+from shared.database import get_db
 
 router = APIRouter()
 

@@ -22,18 +22,18 @@ from pathlib import Path
 from tqdm import tqdm
 
 # ── Config ─────────────────────────────────────────────────────────────────
-from config import (
+from shared.config import (
     DATASET_ROOT, MANIFEST_PATH, LOG_PATH,
     EMBED_URL, NVIDIA_HEADERS, EMBEDDING_MODEL,
     N_CASES,
 )
 
 # ── Database ────────────────────────────────────────────────────────────────
-from database.db_connection import neo4j_driver
+from shared.database import neo4j_driver
 
 # ── Labels (schema + graph writers) ────────────────────────────────────────
-from database.graph_schema import setup_schema
-from database.graph_inserts import (
+from Extraction.database.graph_schema import setup_schema
+from Extraction.database.graph_inserts import (
     upsert_act, upsert_court,
     insert_person, upsert_organization, upsert_judge,
     upsert_case,
@@ -46,27 +46,25 @@ from database.graph_inserts import (
 )
 
 # ── Text extraction ─────────────────────────────────────────────────────────
-from text_extraction.json_loader import (
+from Extraction.text_extraction.json_loader import (
     build_manifest, load_json, build_case_model,
 )
-from text_extraction.pdf_extractor import (
+from Extraction.text_extraction.pdf_extractor import (
     extract_pdf_text, extract_fixed_fields,
 )
 
 # ── LLM ────────────────────────────────────────────────────────────────────
-from llm_extraction import (
+from Extraction.llm_extraction import (
     run_llm_extraction,
     run_batch_adjudicator,
     get_fuzzy_candidates,
 )
-from validate_llm.core import validate_case_delta
-from validate_llm.metrics import generate_validation_summary
+
 
 # ── Utils ───────────────────────────────────────────────────────────────────
-from utils.helpers import dedup_assets, to_none, clean_rel_type
+from Extraction.utils.helpers import dedup_assets, to_none, clean_rel_type
 
 import requests
-import numpy as np
 from tenacity import retry, wait_exponential, stop_after_attempt
 
 
@@ -176,12 +174,7 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
 
     # ── PHASE 3: LLM extraction ─────────────────────────────────────────
     logger.debug(f"Starting PHASE 3: LLM extraction for {result['cnr']}")
-    llm_result        = run_llm_extraction(pdf_texts, case)
-    
-    # NEW: Targeted delta-validation
-    llm_result, val_stats = validate_case_delta(llm_result, pdf_texts)
-    generate_validation_summary(case.cnr_number, val_stats)
-    result['val_stats'] = val_stats   # carry forward for run-level reporting
+    llm_result = run_llm_extraction(pdf_texts, case)
     
     summary           = llm_result.get('search_summary') or ''
     judges_data       = llm_result.get('judges', [])
@@ -202,8 +195,8 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
     deduped_assets = dedup_assets(raw_assets)
 
     # ── Merge additional Acts ───────────────────────────────────────────
-    from text_extraction.json_loader import ActModel
-    from utils.helpers import normalize_name
+    from Extraction.text_extraction.json_loader import ActModel
+    from Extraction.utils.helpers import normalize_name
     act_map = {}
     
     for a in case.acts:
@@ -439,40 +432,7 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
                 )
         session.execute_write(_update_docs)
 
-    # ── PHASE 6: Embed summary → store on Case node ─────────────────────
-    logger.debug(f"Starting PHASE 6: Embedding summary for {result['cnr']}")
-    if summary:
-        try:
-            vec = embed_texts_retry([summary])[0]
-            with neo4j_driver.session() as session:
-                session.execute_write(
-                    lambda tx: update_case_vector(tx, case_id, vec.tolist())
-                )
-        except Exception as e:
-            logger.warning(f'Vector store failed for {case.cnr_number}: {e}')
 
-    # ── PHASE 7: Sentence-level chunking → Chunk nodes ──────────────────
-    logger.debug(f"Starting PHASE 7: Sentence chunking for {result['cnr']}")
-    if summary:
-        try:
-            import spacy
-            _nlp = spacy.load('en_core_web_sm')
-            doc = _nlp(summary)
-            sentences = [s.text.strip() for s in doc.sents if len(s.text.strip()) >= 20]
-            if sentences:
-                chunk_vecs = embed_texts_retry(sentences)
-                chunks = [
-                    {'text': sent, 'chunk_index': i, 'vector': vec.tolist()}
-                    for i, (sent, vec) in enumerate(zip(sentences, chunk_vecs))
-                ]
-                with neo4j_driver.session() as session:
-                    def _write_chunks(tx):
-                        delete_case_chunks(tx, case_id)
-                        insert_chunks(tx, case_id, case.cnr_number, chunks)
-                    session.execute_write(_write_chunks)
-                logger.info(f'{case.cnr_number}: {len(chunks)} chunks created')
-        except Exception as e:
-            logger.warning(f'Chunking failed for {case.cnr_number}: {e}')
 
     return result
 
@@ -495,45 +455,18 @@ def main():
     pending = manifest[manifest['status'] == 'pending'].head(N_CASES)
     logger.info(f'Processing {len(pending)} pending cases')
 
-    # Validation report path (next to manifest)
-    import json as _json_mod
-    from datetime import datetime as _dt
-    val_report_path = MANIFEST_PATH.parent / 'validation_report.jsonl'
-
-    run_verified  = 0
-    run_extracted = 0
-
     for idx, row in tqdm(pending.iterrows(), total=len(pending), desc='Cases'):
         pdf_paths = row['pdf_paths'].split('|') if row['pdf_paths'] else []
         t0 = time.time()
         try:
             result  = process_case(row['json_path'], pdf_paths)
             elapsed = round(time.time() - t0, 1)
-
-            # ── Accumulate validation stats ────────────────────────────────
-            vs = result.get('val_stats', {})
-            run_verified  += vs.get('total_verified', 0)
-            run_extracted += vs.get('total_extracted', 0)
-
-            # Write one JSON line to validation_report.jsonl
-            report_entry = {
-                'cnr'            : result['cnr'],
-                'timestamp'      : _dt.now().isoformat(),
-                'total_extracted': vs.get('total_extracted', 0),
-                'total_verified' : vs.get('total_verified', 0),
-                'total_rejected' : vs.get('total_rejected', 0),
-                'accuracy_score' : vs.get('accuracy_score', 100.0),
-            }
-            with open(val_report_path, 'a', encoding='utf-8') as vf:
-                vf.write(_json_mod.dumps(report_entry) + '\n')
-
             logger.info(
                 f"[{result['cnr']}] done | "
                 f"{result['hearings']}h | "
                 f"{result['assets']} assets | "
                 f"{result['summary_words']}w | "
-                f"{elapsed}s | "
-                f"val={vs.get('accuracy_score', 100.0):.1f}%"
+                f"{elapsed}s"
             )
             manifest.at[idx, 'status']    = 'done'
             manifest.at[idx, 'error_msg'] = ''
@@ -550,16 +483,6 @@ def main():
     failed       = len(manifest[manifest['status'] == 'failed'])
     pending_left = len(manifest[manifest['status'] == 'pending'])
     logger.info(f'Done: {done}  Failed: {failed}  Remaining: {pending_left}')
-
-    # ── Run-level validation totals ────────────────────────────────────────
-    if run_extracted > 0:
-        run_accuracy = round((run_verified / run_extracted) * 100, 2)
-        logger.info(
-            f"VALIDATION TOTALS FOR THIS RUN — "
-            f"Verified: {run_verified}/{run_extracted} entities | "
-            f"Run Accuracy: {run_accuracy}%"
-        )
-        logger.info(f"Detailed report written to: {val_report_path}")
 
     if failed:
         for _, row in manifest[manifest['status'] == 'failed'].iterrows():

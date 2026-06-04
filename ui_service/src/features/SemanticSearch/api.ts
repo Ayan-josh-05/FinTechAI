@@ -666,7 +666,7 @@ export const semanticSearchApi = {
     abortController?: AbortController
   ): Promise<SemanticSearchResultById> => {
     const accessToken = Cookies.get('access_token');
-    const url = `${API_BASE_URL}/semantic-search/job/${id}`;
+    const url = `${API_BASE_URL}/search/job/${id}`;
 
     const headers: HeadersInit = {
       Accept: 'text/event-stream',
@@ -929,7 +929,7 @@ export const semanticSearchApi = {
   },
 
   getSearchResultFromHistory: async (id: string): Promise<SemanticSearchResultById> => {
-    const response = await api.get<HistorySearchResponse>(`/semantic-search/chat/${id}/history`)
+    const response = await api.get<HistorySearchResponse>(`/search/chat/${id}/history`)
     const historyData = response.data
 
     return {
@@ -948,7 +948,7 @@ export const semanticSearchApi = {
 
   getChatHistory: async (chatId: string, page: number = 1, pageSize: number = 10): Promise<ChatHistoryResponse> => {
     try {
-      const response = await api.get<ChatHistoryResponse>(`/semantic-search/chat/${chatId}/history?page=${page}&page_size=${pageSize}`);
+      const response = await api.get<ChatHistoryResponse>(`/search/chat/${chatId}/history?page=${page}&page_size=${pageSize}`);
       return response.data;
     } catch (error) {
       return {
@@ -961,13 +961,13 @@ export const semanticSearchApi = {
 
 
   getSuggestions: async (query: string): Promise<Array<string>> => {
-    const response = await api.get(`/semantic-search/suggestions?query=${encodeURIComponent(query)}`)
+    const response = await api.get(`/search/suggestions?query=${encodeURIComponent(query)}`)
     return response.data
   },
 
   getSearchHistory: async (page: number = 1, pageSize: number = 10): Promise<SearchHistoryResponse> => {
     try {
-      const response = await api.get(`/semantic-search/chat/history?page=${page}&page_size=${pageSize}`);
+      const response = await api.get(`/search/chat/history?page=${page}&page_size=${pageSize}`);
       return response.data;
     } catch (error) {
       return {
@@ -980,16 +980,16 @@ export const semanticSearchApi = {
   },
 
   deleteSearchHistory: async (chatId: string): Promise<void> => {
-    await api.delete(`/semantic-search/chat/${chatId}`);
+    await api.delete(`/search/session/${chatId}`);
   },
 
   stopStreamingResponse: async (jobId: string): Promise<{ message: string }> => {
-    const response = await api.post('/semantic-search/chat/stop-conversation', { job_id: jobId })
+    const response = await api.post('/search/chat/stop', { job_id: jobId })
     return response.data
   },
 
   submitFeedback: async (jobId: string, reaction: 'like' | 'dislike', feedbackText?: string): Promise<{ message: string; id: string }> => {
-    const response = await api.post(`/semantic-search/jobs/${jobId}/feedback`, {
+    const response = await api.post(`/search/jobs/${jobId}/feedback`, {
       reaction,
       feedback_text: feedbackText || ""
     })
@@ -997,14 +997,14 @@ export const semanticSearchApi = {
   },
 
   deleteFeedback: async (jobId: string, feedbackId: string): Promise<{ message: string }> => {
-    const response = await api.delete(`/semantic-search/jobs/${jobId}/feedback/${feedbackId}`)
+    const response = await api.delete(`/search/jobs/${jobId}/feedback/${feedbackId}`)
     return response.data
   },
 
   createSearchJob: async (
     params: SemanticSearchRequest,
   ): Promise<{ chatId: string; metadata?: Record<string, unknown> }> => {
-    const response = await api.post('/legal-buddy', params)
+    const response = await api.post('/search/session', params)
     const chatId =
       response.data?.chatId ?? response.data?.chat_id ?? response.data?.jobId ?? response.data?.job_id ?? response.data?.id ?? null
 
@@ -1036,7 +1036,7 @@ export const semanticSearchApi = {
     abortController?: AbortController
   ): Promise<SemanticSearchResultById> => {
     const accessToken = Cookies.get('access_token');
-    const url = `${API_BASE_URL}/legal-buddy/chat`;
+    const url = `${API_BASE_URL}/search/chat`;
 
     const headers: HeadersInit = {
       Accept: 'text/event-stream',
