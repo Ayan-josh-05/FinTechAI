@@ -54,8 +54,11 @@ def build_manifest(dataset_root: Path, manifest_path: Path) -> pd.DataFrame:
 
     new_df = pd.DataFrame(rows)
 
-    if manifest_path.exists():
-        existing = pd.read_csv(manifest_path, dtype=str).fillna('')
+    if manifest_path.exists() and manifest_path.stat().st_size > 0:
+        try:
+            existing = pd.read_csv(manifest_path, dtype=str).fillna('')
+        except pd.errors.EmptyDataError:
+            existing = pd.DataFrame(columns=['json_path', 'status', 'error_msg'])
         merged   = new_df.merge(
             existing[['json_path', 'status', 'error_msg']],
             on='json_path', how='left', suffixes=('', '_old'),

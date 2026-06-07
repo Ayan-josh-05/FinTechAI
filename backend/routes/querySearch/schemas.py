@@ -8,7 +8,16 @@ class SearchFields(BaseModel):
     address: Optional[str] = None
     judge_name: Optional[str] = None
     advocate_name: Optional[str] = None
-    # Add other fields as needed
+    advocate_on_record_number: Optional[str] = None
+    pan_num: Optional[str] = None
+    aadhaar_number: Optional[str] = None
+    legal_section: Optional[str] = None
+    case_type: Optional[str] = None
+    court_name: Optional[str] = None
+    filing_year: Optional[str] = None
+    state: Optional[str] = None
+    district: Optional[str] = None
+
     class Config:
         extra = "allow"
 

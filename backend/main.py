@@ -20,8 +20,8 @@ app.include_router(case.router, prefix="/entity/case", tags=["Case"])
 app.include_router(court.router, prefix="/entity/court", tags=["Court"])
 app.include_router(search.router, prefix="/search", tags=["Search"])
 
-from .routes.querySearch import semantic_search_v2
-app.include_router(semantic_search_v2.router, prefix="/semantic-search", tags=["Semantic Search"])
+from .routes.querySearch import semantic_search_v3
+app.include_router(semantic_search_v3.router, prefix="/semantic-search", tags=["Semantic Search"])
 
 @app.on_event("shutdown")
 def shutdown_event():
