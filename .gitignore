@@ -8,6 +8,7 @@ data/
 legal_cases_export.csv
 court_case_pipeline_v3.ipynb
 detailed_gap_analysis.md
+.legalai/
 
 # Database storage
 qdrant_storage/
