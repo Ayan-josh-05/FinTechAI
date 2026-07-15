@@ -67,7 +67,8 @@ try:
     from neo4j import GraphDatabase
 
     _agent_llm  = ChatNVIDIA(model=AGENT_MODEL, api_key=NVIDIA_API_KEY,
-                              temperature=0.2, max_completion_tokens=2048, timeout=300)
+                              temperature=0.2, max_completion_tokens=2048,
+                              timeout=300)
     _embeddings = NVIDIAEmbeddings(model=EMBED_MODEL, api_key=NVIDIA_API_KEY, truncate="END")
     _qdrant     = QdrantClient(url=QDRANT_URL)
     _neo4j      = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))

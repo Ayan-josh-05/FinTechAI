@@ -22,8 +22,8 @@ echo -e "  ${CYAN}Frontend${NC} → http://localhost:3000"
 echo -e "${YELLOW}Press Ctrl+C to stop both.${NC}\n"
 
 # ── Activate Python virtual environment ───────────────────────────────────────
-if [ -f "$PROJECT_ROOT/.venv/bin/activate" ]; then
-    source "$PROJECT_ROOT/.venv/bin/activate"
+if [ -f "$PROJECT_ROOT/.legalai/bin/activate" ]; then
+    source "$PROJECT_ROOT/.legalai/bin/activate"
 else
     echo "ERROR: .venv not found at $PROJECT_ROOT/.venv" >&2
     exit 1
@@ -38,7 +38,7 @@ BACKEND_PID=$!
 # ── Start frontend ────────────────────────────────────────────────────────────
 echo "[frontend] Starting Vite dev server..."
 cd "$PROJECT_ROOT/ui_service"
-npm run dev &
+mise exec -- npm run dev &
 FRONTEND_PID=$!
 
 # ── Wait and handle Ctrl+C ────────────────────────────────────────────────────
