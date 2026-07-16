@@ -293,7 +293,7 @@ This one-time script reads `Document.full_text` from Neo4j, chunks the text, emb
 
 ```bash
 # With venv activated
-python -m backend.scripts.build_qdrant_index
+python3 -m backend.scripts.build_qdrant_index
 ```
 
 Re-run any time new cases are added to Neo4j.

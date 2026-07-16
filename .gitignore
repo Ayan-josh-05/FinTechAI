@@ -1,5 +1,6 @@
 .venv/
 .env
+.legalai/
 manifest.csv
 pipeline.log
 __pycache__/

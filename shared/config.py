@@ -17,6 +17,10 @@ load_dotenv(dotenv_path=_ENV_PATH)
 DATASET_ROOT  = Path(os.environ["DATASET_ROOT"])
 MANIFEST_PATH = Path("./manifest.csv")
 LOG_PATH      = Path("./pipeline.log")
+CACHE_ROOT    = Path(os.environ.get("CACHE_ROOT", str(DATASET_ROOT / ".pipeline_cache")))
+
+# Bump this string to globally invalidate ALL cached outputs across all cases.
+PIPELINE_VERSION = "1"
 
 # ── Neo4j ──────────────────────────────────────────────────────────────────
 NEO4J_URI      = os.environ["NEO4J_URI"]
@@ -30,12 +34,9 @@ QDRANT_COLLECTION = os.environ["QDRANT_COLLECTION"]
 
 # ── NVIDIA / LLM ───────────────────────────────────────────────────────────
 NVIDIA_API_KEY   = os.environ["NVIDIA_API_KEY"]
-EXTRACTION_MODEL = "qwen/qwen3.5-397b-a17b"
-VALIDATION_MODEL = "meta/llama-3.1-8b-instruct"
-EMBEDDING_MODEL  = "nvidia/nv-embedqa-e5-v5"            # confirmed working
-AGENT_MODEL      = "qwen/qwen3-coder-480b-a35b-instruct"         # supports function calling, fast
-INTENT_MODEL     = "meta/llama-3.1-8b-instruct"
-REASONING_MODEL  = "qwen/qwen3-coder-480b-a35b-instruct"
+EXTRACTION_MODEL = os.environ["EXTRACTION_MODEL"]
+EMBEDDING_MODEL  = os.environ["EMBEDDING_MODEL"]            # confirmed working
+AGENT_MODEL      = os.environ["AGENT_MODEL"]         # supports function calling, fast
 EMBED_DIM        = 2048
 EXTRACT_URL      = "https://integrate.api.nvidia.com/v1/chat/completions"
 EMBED_URL        = "https://integrate.api.nvidia.com/v1/embeddings"
@@ -72,4 +73,4 @@ ORG_KEYWORDS = {
 }
 
 # ── Pipeline ───────────────────────────────────────────────────────────────
-N_CASES = 1  # number of pending cases to process per run
+N_CASES = 2  # number of pending cases to process per run
