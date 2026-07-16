@@ -6,8 +6,13 @@ Key design decisions:
   - No JSONB anywhere — model_fields dicts become flat node properties
     via _set_flat_props().
   - Asset attributes dict → individual properties on the Asset node.
-  - ADDRESS is stored on the Person / Organization node directly
-    (NOT on the PETITIONER_IN / RESPONDENT_IN relationship).
+  - ADDRESS is stored as flat properties on Person / Organization nodes
+    (NOT on the PETITIONER_IN / RESPONDENT_IN relationship):
+      address_raw, address_house_no, address_street, address_locality,
+      address_city, address_district, address_state, address_pincode,
+      address_type, address_source, address_confidence
+  - Address merge uses COALESCE — existing data is never overwritten by a
+    weaker source. Priority: json (high) > pdf_llm (medium) > pdf_regex (low).
   - ExtractionLog.missing_data_reasons kept as a JSON string because
     the structure is genuinely variable.
 """
@@ -53,6 +58,99 @@ def _set_flat_props(tx, node_id: str, label: str, props: dict) -> None:
         f'MATCH (n:{label} {{id: $nid}}) SET {set_clause}',
         nid=node_id, **clean,
     )
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# Address helpers
+# ══════════════════════════════════════════════════════════════════════════
+
+# Confidence rank — higher number = stronger source; COALESCE only fills nulls,
+# so we use a separate guard to prevent a weaker source overwriting a stronger one.
+_ADDR_CONFIDENCE_RANK = {'high': 3, 'medium': 2, 'low': 1}
+
+
+def _write_address(tx, node_id: str, label: str, addr: dict) -> None:
+    """
+    Write structured address fields onto a Person or Organization node.
+
+    Uses COALESCE so an existing value is NEVER overwritten — only null fields
+    get filled. The one exception: if the incoming source is strictly stronger
+    than what's on the node (json > pdf_llm > pdf_regex), we allow a full
+    overwrite so a high-quality JSON address can replace a previously stored
+    low-quality PDF guess.
+    """
+    if not addr:
+        return
+
+    # Determine incoming confidence rank (default to lowest)
+    incoming_rank = _ADDR_CONFIDENCE_RANK.get(addr.get('address_confidence', 'low'), 1)
+
+    # Read current confidence on the node to decide merge strategy
+    row = tx.run(
+        f"MATCH (n:{label} {{id: $nid}}) RETURN n.address_confidence AS conf",
+        nid=node_id,
+    ).single()
+    existing_conf  = row['conf'] if row else None
+    existing_rank  = _ADDR_CONFIDENCE_RANK.get(existing_conf, 0) if existing_conf else 0
+
+    if incoming_rank > existing_rank:
+        # Stronger source — overwrite all address fields
+        tx.run(
+            f"""MATCH (n:{label} {{id: $nid}})
+            SET n.address_raw        = $raw,
+                n.address_house_no   = $house_no,
+                n.address_street     = $street,
+                n.address_locality   = $locality,
+                n.address_city       = $city,
+                n.address_district   = $district,
+                n.address_state      = $state,
+                n.address_pincode    = $pincode,
+                n.address_type       = $atype,
+                n.address_source     = $source,
+                n.address_confidence = $confidence,
+                n.updated_at         = datetime()""",
+            nid=node_id,
+            raw=addr.get('raw'),
+            house_no=addr.get('house_no'),
+            street=addr.get('street'),
+            locality=addr.get('locality'),
+            city=addr.get('city'),
+            district=addr.get('district'),
+            state=addr.get('state'),
+            pincode=addr.get('pincode'),
+            atype=addr.get('address_type'),
+            source=addr.get('address_source', 'unknown'),
+            confidence=addr.get('address_confidence', 'low'),
+        )
+    else:
+        # Same or weaker source — fill only null fields (COALESCE)
+        tx.run(
+            f"""MATCH (n:{label} {{id: $nid}})
+            SET n.address_raw        = COALESCE(n.address_raw,        $raw),
+                n.address_house_no   = COALESCE(n.address_house_no,   $house_no),
+                n.address_street     = COALESCE(n.address_street,     $street),
+                n.address_locality   = COALESCE(n.address_locality,   $locality),
+                n.address_city       = COALESCE(n.address_city,       $city),
+                n.address_district   = COALESCE(n.address_district,   $district),
+                n.address_state      = COALESCE(n.address_state,      $state),
+                n.address_pincode    = COALESCE(n.address_pincode,    $pincode),
+                n.address_type       = COALESCE(n.address_type,       $atype),
+                n.address_source     = COALESCE(n.address_source,     $source),
+                n.address_confidence = COALESCE(n.address_confidence, $confidence),
+                n.updated_at         = datetime()""",
+            nid=node_id,
+            raw=addr.get('raw'),
+            house_no=addr.get('house_no'),
+            street=addr.get('street'),
+            locality=addr.get('locality'),
+            city=addr.get('city'),
+            district=addr.get('district'),
+            state=addr.get('state'),
+            pincode=addr.get('pincode'),
+            atype=addr.get('address_type'),
+            source=addr.get('address_source', 'unknown'),
+            confidence=addr.get('address_confidence', 'low'),
+        )
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -104,21 +202,18 @@ def insert_person(
     name_source: str = 'json',
     model_fields: dict | None = None,
     resolved_uuid: str = None,
-    address: str | None = None,
+    address: dict | None = None,
 ) -> str:
     norm = normalize_name(name)
     if not norm:
         return str(uuid.uuid4())
 
     if resolved_uuid:
-        # Node exists — patch new flat properties and address if we now know them
-        if address:
-            tx.run(
-                "MATCH (p:Person {id: $id}) SET p.address = $addr, p.updated_at = datetime()",
-                id=resolved_uuid, addr=address,
-            )
         _set_flat_props(tx, resolved_uuid, 'Person', model_fields)
-        tx.run("MATCH (p:Person {id: $id}) SET p.updated_at = datetime()", id=resolved_uuid)
+        if address:
+            _write_address(tx, resolved_uuid, 'Person', address)
+        else:
+            tx.run("MATCH (p:Person {id: $id}) SET p.updated_at = datetime()", id=resolved_uuid)
         return resolved_uuid
 
     r = tx.run("""
@@ -130,12 +225,9 @@ def insert_person(
         norm=norm, id=str(uuid.uuid4()), name=name, src=name_source)
     pid = r.single()['id']
 
-    if address:
-        tx.run(
-            "MATCH (p:Person {id: $id}) SET p.address = $addr",
-            id=pid, addr=address,
-        )
     _set_flat_props(tx, pid, 'Person', model_fields)
+    if address:
+        _write_address(tx, pid, 'Person', address)
     return pid
 
 
@@ -150,20 +242,18 @@ def upsert_organization(
     name: str,
     model_fields: dict | None = None,
     resolved_uuid: str = None,
-    address: str | None = None,
+    address: dict | None = None,
 ) -> str | None:
     norm = normalize_name(name)
     if not norm:
         return None
 
     if resolved_uuid:
-        if address:
-            tx.run(
-                "MATCH (o:Organization {id: $id}) SET o.address = $addr, o.updated_at = datetime()",
-                id=resolved_uuid, addr=address,
-            )
         _set_flat_props(tx, resolved_uuid, 'Organization', model_fields)
-        tx.run("MATCH (o:Organization {id: $id}) SET o.updated_at = datetime()", id=resolved_uuid)
+        if address:
+            _write_address(tx, resolved_uuid, 'Organization', address)
+        else:
+            tx.run("MATCH (o:Organization {id: $id}) SET o.updated_at = datetime()", id=resolved_uuid)
         return resolved_uuid
 
     r = tx.run("""
@@ -176,12 +266,9 @@ def upsert_organization(
         norm=norm, id=str(uuid.uuid4()), name=name, otype=org_type(name))
     oid = r.single()['id']
 
-    if address:
-        tx.run(
-            "MATCH (o:Organization {id: $id}) SET o.address = $addr",
-            id=oid, addr=address,
-        )
     _set_flat_props(tx, oid, 'Organization', model_fields)
+    if address:
+        _write_address(tx, oid, 'Organization', address)
     return oid
 
 
@@ -223,6 +310,40 @@ def upsert_judge(
                    id=row['id'], desig=designation, court=court)
             _set_flat_props(tx, row['id'], 'Person', model_fields)
             return row['id']
+
+    # Soft-insert guard: prevent false merges for common short judge names
+    # (e.g. "R. Sharma" at Delhi HC vs "R. Sharma" at Bombay HC).
+    # If existing judge nodes with this name_norm all have a *known* different
+    # court, CREATE a new node rather than MERGEing into the wrong one.
+    # We only bypass MERGE when there is positive evidence of a conflict —
+    # if court is unknown, or any existing node lacks a court, we fall through
+    # to the normal MERGE so we don't create spurious duplicates.
+    if norm and court:
+        existing_rows = tx.run(
+            """MATCH (p:Person {name_norm: $norm, is_judge: true})
+               RETURN p.id AS id, p.current_court AS current_court""",
+            norm=norm,
+        ).data()
+        if existing_rows:
+            known_courts = [r['current_court'] for r in existing_rows if r['current_court']]
+            # Only force CREATE when ALL existing nodes have a different known court
+            if known_courts and len(known_courts) == len(existing_rows) and all(c != court for c in known_courts):
+                new_id = str(uuid.uuid4())
+                tx.run("""
+                    CREATE (p:Person {
+                        id: $id, name: $name, name_norm: $norm,
+                        name_source: 'pdf', is_judge: true,
+                        designation: $desig, uid_number: $uid,
+                        current_court: $court, created_at: datetime()
+                    })""",
+                    id=new_id, name=name, norm=norm,
+                    desig=designation, uid=uid_number, court=court)
+                logger.debug(
+                    f"Soft-insert: created new judge node for {name!r} at {court!r} "
+                    f"(existing nodes have different courts: {known_courts})"
+                )
+                _set_flat_props(tx, new_id, 'Person', model_fields)
+                return new_id
 
     r = tx.run("""
         MERGE (p:Person {name_norm: $norm})
@@ -501,6 +622,12 @@ def insert_assets(tx, case_id: str, assets: list, doc_id_map: dict) -> None:
         asset_id   = str(uuid.uuid4())
         attributes = a.get('attributes') or {}
 
+        raw_addr = a.get('address')
+        addr_dict = raw_addr if isinstance(raw_addr, dict) else (
+            {'raw': raw_addr, 'address_source': 'pdf_llm', 'address_confidence': 'medium'}
+            if raw_addr else None
+        )
+
         tx.run("""
             MATCH (c:Case {id: $cid})
             CREATE (asset:Asset {
@@ -508,7 +635,6 @@ def insert_assets(tx, case_id: str, assets: list, doc_id_map: dict) -> None:
                 asset_type: $atype,
                 identifier: $identifier,
                 description: $desc,
-                address: $addr,
                 estimated_value_inr: $value,
                 created_at: datetime()
             })
@@ -516,10 +642,11 @@ def insert_assets(tx, case_id: str, assets: list, doc_id_map: dict) -> None:
             id=asset_id, cid=case_id, atype=atype,
             identifier=a.get('identifier'),
             desc=a.get('description'),
-            addr=a.get('address'),
             value=a.get('estimated_value_inr'))
 
         _set_flat_props(tx, asset_id, 'Asset', attributes)
+        if addr_dict:
+            _write_address(tx, asset_id, 'Asset', addr_dict)
 
 
 # ══════════════════════════════════════════════════════════════════════════

@@ -165,6 +165,22 @@ Org: {org_schema}
 - Also, if you find sections for Known Acts that were missing from JSON, list them too!
 - Ensure section numbers are returned as a single comma-separated string (e.g. "302, 307, 34").
 
+7. PARTY ADDRESSES:
+- For EACH petitioner and respondent (known or new), extract their address if found in the PDF.
+- Break the address into structured sub-fields wherever possible:
+    house_no   — door number, flat number, plot/survey number
+    street     — street, road, or lane name
+    locality   — area, colony, sector, ward, or neighbourhood
+    city       — city or town name
+    district   — revenue district
+    state      — Indian state name
+    pincode    — 6-digit Indian pincode
+    address_type — one of: current / permanent / registered / office
+- Always set 'raw' to the verbatim address string as it appears in the PDF.
+- If the PDF only has a partial address (e.g. city + pincode), fill only those sub-fields — never guess the rest.
+- If no address is found for a party, omit that party from this list entirely.
+- supporting_quote MUST be a verbatim substring from the PDF text (≥6 words).
+
 ═══════════════════════════════════════════════════════════════
 C. CRITICAL RULES
 1. DO NOT OVERWRITE: Data already present in the JSON (listed as 'Known') is the primary truth. Do not replace it with different values found in the PDF.
@@ -185,43 +201,78 @@ RETURN THIS EXACT JSON SCHEMA:
   "new_parties": [ {{ "type": "person/organization", "name": "...", "role": "...", "info": {{}}, "supporting_quote": "verbatim text from PDF" }} ],
   "party_additional_info": [ {{ "name": "...", "info": {{}}, "supporting_quote": "verbatim text from PDF" }} ],
   "missing_advocates": [ {{ "name": "...", "side": "petitioner/respondent", "supporting_quote": "verbatim text from PDF" }} ],
-  "additional_acts": [ {{ "name": "...", "section": "...", "supporting_quote": "verbatim text from PDF" }} ]
+  "additional_acts": [ {{ "name": "...", "section": "...", "supporting_quote": "verbatim text from PDF" }} ],
+  "party_addresses": [
+    {{
+      "name": "exact party name as listed above",
+      "address": {{
+        "raw": "verbatim address from PDF",
+        "house_no": "...",
+        "street": "...",
+        "locality": "...",
+        "city": "...",
+        "district": "...",
+        "state": "...",
+        "pincode": "...",
+        "address_type": "current/permanent/registered/office"
+      }},
+      "supporting_quote": "verbatim text from PDF (≥6 words)"
+    }}
+  ]
 }}
 """
     return prompt
 
 
 BATCH_RESOLUTION_PROMPT = """
-You are an expert Master Data Management Batch Adjudicator for a legal system.
+You are an expert Master Data Management Batch Adjudicator for an Indian legal document system.
 Receive NEW entities under 'entities_to_adjudicate', each with 'db_candidates' from the graph.
-For each: if a candidate is 100% the same real-world entity return EXACT + its UUID.
-Otherwise return NONE.
+
+MATCHING RULES (apply in order):
+1. INITIALS MATCH: "M. A. Shinde" and "Madhav Arvind Shinde" ARE the same person when
+   initials match the first letters of the full name tokens AND the surname matches.
+2. WORD ORDER: "Arvind Madhav Shinde" and "Madhav Arvind Shinde" ARE the same person —
+   word order differences never indicate different persons.
+3. TITLES IGNORED: Justice / Shri / Smt / Dr / Mr / Ms / Adv do NOT distinguish persons.
+4. ABBREVIATIONS: "Kotak Mahindra Bk" and "Kotak Mahindra Bank" ARE the same organization.
+5. COURT CONFLICT: Same name but clearly different courts or tenures = NONE (different persons).
+6. MIDDLE NAME CONFLICT: "Suresh Kumar Patil" vs "Suresh Anil Patil" = NONE (likely different).
+
+For each entity: if a candidate is the same real-world person/org, return EXACT + its UUID.
+Otherwise return NONE. Focus on finding CONFLICTS, not just similarities.
 
 Return ONLY valid JSON:
 {
   "resolutions": [
-    {"extracted_name": "Jon Doe", "entity_type": "person",
+    {"extracted_name": "M. A. Shinde", "entity_type": "judge",
      "match_confidence": "EXACT", "matched_uuid": "uuid-or-null",
-     "reasoning": "Brief reason."}
+     "reasoning": "Initials M.A. match Madhav Arvind; surname Shinde matches."}
   ]
 }
 """
 
 SINGLE_ENTITY_RESOLUTION_PROMPT = """
-You are an expert Master Data Management Adjudicator for a legal graph database.
+You are an expert Master Data Management Adjudicator for an Indian legal graph database.
 You will receive ONE new entity and a list of existing candidates from the graph.
 
-Compare the new entity against each candidate carefully:
-- Protect against typos and abbreviations (e.g. 'Kotak Mahindra Bk' vs 'Kotak Mahindra Bank')
-- Two people with the same name are DIFFERENT if their roles or contexts clearly differ
-- If a candidate is 100% the same real-world entity, return EXACT and its UUID
-- Otherwise return NONE
+MATCHING RULES (apply in order):
+1. INITIALS MATCH: "M. A. Shinde" and "Madhav Arvind Shinde" ARE the same person when
+   initials match the first letters of the full name tokens AND the surname matches.
+2. WORD ORDER: "Arvind Madhav Shinde" and "Madhav Arvind Shinde" ARE the same person —
+   word order differences never indicate different persons.
+3. TITLES IGNORED: Justice / Shri / Smt / Dr / Mr / Ms / Adv do NOT distinguish persons.
+4. ABBREVIATIONS: "Kotak Mahindra Bk" and "Kotak Mahindra Bank" ARE the same organization.
+5. COURT CONFLICT: Same name but clearly different courts or tenures = NONE (different persons).
+6. MIDDLE NAME CONFLICT: "Suresh Kumar Patil" vs "Suresh Anil Patil" = NONE (likely different).
+
+If a candidate is 100% the same real-world entity, return EXACT and its UUID.
+Otherwise return NONE. Focus on CONFLICTS, not similarities.
 
 Return ONLY valid JSON:
 {
   "match_confidence": "EXACT" or "NONE",
   "matched_uuid": "uuid-string or null",
-  "reasoning": "Brief explanation"
+  "reasoning": "Brief explanation citing the specific rule applied."
 }
 """
 
@@ -404,6 +455,7 @@ def run_llm_extraction(pdf_texts: dict, case) -> dict:
         result.setdefault('case_updates',        {})
         result.setdefault('new_parties',         [])
         result.setdefault('additional_acts',     [])
+        result.setdefault('party_addresses',     [])
         
         # Guardrail: Only allow updates for fields that were actually missing
         case_manifest = {
@@ -439,6 +491,7 @@ def run_llm_extraction(pdf_texts: dict, case) -> dict:
             f"missing_advocates={len(result.get('missing_advocates',[]))}, "
             f"additional_acts={len(result.get('additional_acts',[]))}, "
             f"party_additional_info={len(result.get('party_additional_info',[]))}, "
+            f"party_addresses={len(result.get('party_addresses',[]))}, "
             f"case_updates={len(result.get('case_updates',{}))}"
         )
         return result
@@ -528,19 +581,56 @@ def run_llm_adjudicator(new_entity: dict, db_candidates: list) -> dict:
 
 
 # ══════════════════════════════════════════════════════════════════════════
+# Fuzzy name scoring (Stage 3a)
+# ══════════════════════════════════════════════════════════════════════════
+
+def score_pair(name_a: str, name_b: str) -> float:
+    """
+    Score two names using token-sorted and token-set ratios on their
+    canonical (title-stripped, token-sorted) forms.
+
+    Returns 0.0–1.0. Thresholds used by the pipeline:
+      >= 0.92  → auto_merge (skip LLM)
+      0.60–0.92 → send to LLM batch adjudicator
+      < 0.60   → auto_reject (drop candidate)
+    """
+    from rapidfuzz import fuzz
+    from Extraction.utils.helpers import normalize_name_canonical
+    ca = normalize_name_canonical(name_a)["canonical"]
+    cb = normalize_name_canonical(name_b)["canonical"]
+    if not ca or not cb:
+        return 0.0
+    return max(
+        fuzz.token_sort_ratio(ca, cb) / 100,
+        fuzz.token_set_ratio(ca, cb) / 100,
+    )
+
+
+# ══════════════════════════════════════════════════════════════════════════
 # Fuzzy candidate lookup (Neo4j read — used during entity resolution)
 # ══════════════════════════════════════════════════════════════════════════
 
 def get_fuzzy_candidates(tx, name: str, entity_type: str) -> list[dict]:
     """
     Query Neo4j for candidate nodes that might match *name*.
+
+    Blocking strategy (replaces the old 12-char prefix):
+    - Person/judge/lawyer: block on surname (last token of normalize_name_canonical).
+      This ensures "M. A. Shinde" and "Madhav Arvind Shinde" land in the same
+      candidate set because both have name_norm containing "shinde".
+    - Organization: block on first 12 chars of name_norm (orgs rarely have
+      initials-vs-full-name variation; surname blocking doesn't apply).
+    - Court: unchanged (court names are long and stable).
     """
     logger.debug(f"Starting get_fuzzy_candidates for name: {name}, type: {entity_type}")
-    from Extraction.utils.helpers import normalize_name
-    norm     = normalize_name(name)
-    fragment = norm[:12]
+    from Extraction.utils.helpers import normalize_name, normalize_name_canonical
+    norm = normalize_name(name)
     if not norm:
         return []
+
+    info     = normalize_name_canonical(name)
+    surname  = info["surname"]    # e.g. "shinde" — primary blocking key for persons
+    fragment = norm[:12]          # kept for org/court queries
     candidates = []
 
     if entity_type == 'organization':
@@ -555,22 +645,33 @@ def get_fuzzy_candidates(tx, name: str, entity_type: str) -> list[dict]:
                                 'type': r['type'], 'info': r['info']})
 
     elif entity_type == 'judge':
+        if not surname:
+            return []
         rows = tx.run("""
             MATCH (p:Person)
-            WHERE (p.name_norm CONTAINS $f OR $f CONTAINS p.name_norm)
+            WHERE (p.name_norm CONTAINS $surname OR $surname CONTAINS p.name_norm)
               AND coalesce(p.is_judge, false) = true
             RETURN p.id AS id, p.name AS name,
-                   coalesce(p.designation, '') AS designation""", f=fragment)
+                   coalesce(p.designation, '') AS designation,
+                   coalesce(p.current_court, '') AS current_court""",
+            surname=surname)
         for r in rows:
-            candidates.append({'id': r['id'], 'name': r['name'],
-                                'designation': r['designation']})
+            candidates.append({
+                'id':           r['id'],
+                'name':         r['name'],
+                'designation':  r['designation'],
+                'current_court': r['current_court'],
+            })
 
     elif entity_type in ('person', 'lawyer', 'respondent', 'petitioner'):
+        if not surname:
+            return []
         rows = tx.run("""
             MATCH (p:Person)
-            WHERE p.name_norm CONTAINS $f OR $f CONTAINS p.name_norm
+            WHERE p.name_norm CONTAINS $surname OR $surname CONTAINS p.name_norm
             RETURN p.id AS id, p.name AS name,
-                   coalesce(p.additional_info, '') AS info""", f=fragment)
+                   coalesce(p.additional_info, '') AS info""",
+            surname=surname)
         for r in rows:
             candidates.append({'id': r['id'], 'name': r['name'], 'info': r['info']})
 

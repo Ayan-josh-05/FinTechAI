@@ -43,6 +43,7 @@ from Extraction.database.graph_inserts import (
     insert_assets, insert_extraction_log,
     update_case_vector,
     insert_chunks, delete_case_chunks,
+    _write_address,
 )
 
 # ── Text extraction ─────────────────────────────────────────────────────────
@@ -58,11 +59,13 @@ from Extraction.llm_extraction import (
     run_llm_extraction,
     run_batch_adjudicator,
     get_fuzzy_candidates,
+    score_pair,
 )
 
 
 # ── Utils ───────────────────────────────────────────────────────────────────
 from Extraction.utils.helpers import dedup_assets, to_none, clean_rel_type
+from Extraction.utils.sbert_resolver import combined_judge_score
 
 import requests
 from tenacity import retry, wait_exponential, stop_after_attempt
@@ -137,7 +140,7 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
         'cnr': None, 'hearings': 0, 'documents': 0,
         'pdfs_extracted': 0, 'ocr_count': 0,
         'assets': 0, 'missing_advocates': 0,
-        'party_addresses': 0, 'judges_found': 0,
+        'pdf_addresses': 0, 'judges_found': 0,
         'summary_words': 0, 'errors': [],
     }
 
@@ -189,6 +192,7 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
     result['assets']            = len(raw_assets)
     result['missing_advocates'] = len(missing_advocates)
     result['judges_found']      = len(judges_data)
+    result['pdf_addresses']     = len(llm_result.get('party_addresses', []))
 
     for asset in raw_assets:
         asset['_source_storage_id'] = next(iter(pdf_texts), None)
@@ -237,54 +241,96 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
             court_id = upsert_court(tx, case)
 
             # ── Entity resolution (batch) ──────────────────────────────
-            entities_to_batch = []
+            #
+            # Fuzzy routing thresholds:
+            #   >= 0.92  → auto_merge  (no LLM needed)
+            #   0.60–0.92 → llm_review (send to batch adjudicator)
+            #   < 0.60   → auto_reject (drop candidate)
+            #
+            # For judges, SBERT contextual scoring is applied in the
+            # ambiguous zone when court context is available on both sides.
+
+            FUZZY_AUTO_MERGE  = 0.92
+            FUZZY_AUTO_REJECT = 0.60
+
+            entities_to_batch  = []
+            resolved_uuids_map: dict = {}
+
+            def _route_candidates(extracted_name, entity_type, cands, context=None):
+                """
+                Score each candidate against extracted_name, auto-merge high
+                confidence matches, drop low-confidence ones, and collect the
+                rest for LLM review.
+                """
+                llm_cands = []
+                for cand in cands:
+                    f_score = score_pair(extracted_name, cand['name'])
+
+                    if entity_type == 'judge' and context:
+                        result = combined_judge_score(context, cand, f_score)
+                        score  = result['combined']
+                        route  = result['route']
+                        logger.debug(
+                            f"Judge score {extracted_name!r} vs {cand['name']!r}: "
+                            f"fuzzy={result['fuzzy']}, sbert={result['sbert']}, "
+                            f"combined={result['combined']}, route={route}"
+                        )
+                    else:
+                        score = f_score
+                        if score >= FUZZY_AUTO_MERGE:
+                            route = "auto_merge"
+                        elif score >= FUZZY_AUTO_REJECT:
+                            route = "llm_review"
+                        else:
+                            route = "auto_reject"
+
+                    if route == "auto_merge":
+                        resolved_uuids_map[extracted_name] = cand['id']
+                        logger.debug(f"Auto-merged {extracted_name!r} → {cand['name']!r} (score={score:.2f})")
+                        return  # first auto-merge wins; stop processing this entity
+                    elif route == "llm_review":
+                        llm_cands.append(cand)
+
+                if llm_cands:
+                    entities_to_batch.append({
+                        'extracted_name': extracted_name,
+                        'entity_type'   : entity_type,
+                        'context'       : context or {},
+                        'db_candidates' : llm_cands,
+                    })
 
             for j in judges_data:
                 if j.get('name'):
                     cands = get_fuzzy_candidates(tx, j['name'], 'judge')
                     if cands:
-                        entities_to_batch.append({
-                            'extracted_name': j['name'],
-                            'entity_type'   : 'judge',
-                            'db_candidates' : cands,
-                        })
+                        context = {
+                            'name':        j['name'],
+                            'court':       j.get('court', ''),
+                            'designation': j.get('designation', ''),
+                        }
+                        _route_candidates(j['name'], 'judge', cands, context)
 
             for p in case.persons:
                 etype = 'organization' if p.is_org else 'person'
                 cands = get_fuzzy_candidates(tx, p.name, etype)
                 if cands:
-                    entities_to_batch.append({
-                        'extracted_name': p.name,
-                        'entity_type'   : etype,
-                        'db_candidates' : cands,
-                    })
-            
+                    _route_candidates(p.name, etype, cands)
+
             for np in new_parties:
-                # Handle both string and dict formats from LLM
                 np_name = np if isinstance(np, str) else np.get('name')
                 if np_name:
                     etype = 'person' if isinstance(np, str) else np.get('type', 'person').lower()
                     cands = get_fuzzy_candidates(tx, np_name, etype)
                     if cands:
-                        entities_to_batch.append({
-                            'extracted_name': np_name,
-                            'entity_type'   : etype,
-                            'db_candidates' : cands,
-                        })
+                        _route_candidates(np_name, etype, cands)
 
             for m in missing_advocates:
-                # Handle both string and dict formats from LLM
                 m_name = m if isinstance(m, str) else m.get('name')
                 if m_name:
                     cands = get_fuzzy_candidates(tx, m_name, 'lawyer')
                     if cands:
-                        entities_to_batch.append({
-                            'extracted_name': m_name,
-                            'entity_type'   : 'person',
-                            'db_candidates' : cands,
-                        })
+                        _route_candidates(m_name, 'lawyer', cands)
 
-            resolved_uuids_map: dict = {}
             if entities_to_batch:
                 try:
                     verdict = run_batch_adjudicator(
@@ -305,6 +351,19 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
                 if p.get('info')
             }
 
+            # ── PDF address lookup (keyed by lower-cased party name) ───
+            # Addresses from the LLM are tagged as pdf_llm / medium confidence.
+            # The COALESCE merge strategy in _write_address ensures these only
+            # fill fields that the JSON address left null.
+            pdf_addr_lookup: dict = {}
+            for entry in llm_result.get('party_addresses', []):
+                pname = (entry.get('name') or '').strip().lower()
+                addr  = entry.get('address')
+                if pname and isinstance(addr, dict) and addr.get('raw'):
+                    addr['address_source']     = 'pdf_llm'
+                    addr['address_confidence'] = 'medium'
+                    pdf_addr_lookup[pname]     = addr
+
             # ── Upsert persons / organizations ─────────────────────────
             person_id_map: dict = {}
             for p in case.persons:
@@ -317,14 +376,29 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
                     )
                 elif p.is_org:
                     pid = upsert_organization(
-                        tx, p.name, p_info, mistral_uuid, address=p.address_text,
+                        tx, p.name, p_info, mistral_uuid, address=p.address,
                     )
                 else:
                     pid = insert_person(
                         tx, p.name, 'json', p_info, mistral_uuid,
-                        address=p.address_text,
+                        address=p.address,
                     )
                 person_id_map[f'{p.role}::{p.name}'] = pid
+
+            # ── Enrich addresses from PDF LLM pass ─────────────────────
+            # Applied after JSON upserts so COALESCE in _write_address
+            # only fills fields the JSON left null.
+            for p in case.persons:
+                if p.role in ('petitioner_advocate', 'respondent_advocate'):
+                    continue
+                pdf_addr = pdf_addr_lookup.get(p.name.lower())
+                if not pdf_addr:
+                    continue
+                pid = person_id_map.get(f'{p.role}::{p.name}')
+                if not pid:
+                    continue
+                label = 'Organization' if p.is_org else 'Person'
+                _write_address(tx, pid, label, pdf_addr)
 
             # ── Case node ──────────────────────────────────────────────
             case_updates = llm_result.get('case_updates', {})

@@ -5,6 +5,18 @@ from pydantic import BaseModel, Field
 # Entity Models with Dynamic Descriptions for LLM
 # ══════════════════════════════════════════════════════════════════════════
 
+class AddressModel(BaseModel):
+    raw: Optional[str] = Field(None, description="Original verbatim address string as it appears in the document.")
+    house_no: Optional[str] = Field(None, description="Door number, flat number, plot number, or survey number.")
+    street: Optional[str] = Field(None, description="Street, road, or lane name.")
+    locality: Optional[str] = Field(None, description="Area, colony, ward, or neighbourhood name.")
+    city: Optional[str] = Field(None, description="City or town name.")
+    district: Optional[str] = Field(None, description="Revenue district name.")
+    state: Optional[str] = Field(None, description="Indian state name.")
+    pincode: Optional[str] = Field(None, description="6-digit Indian postal pincode.")
+    address_type: Optional[str] = Field(None, description="Type of address: current / permanent / registered / office.")
+
+
 class User(BaseModel):
     name: Optional[str] = Field(None, description="Full personal name of the individual.")
     aadhaar_no: Optional[str] = Field(None, description="12-digit Indian national ID (Aadhaar).")
@@ -17,8 +29,7 @@ class User(BaseModel):
     phone: Optional[str] = Field(None, description="Contact phone number.")
     # email: Optional[str] = Field(None, description="Email address.")
     # occupation: Optional[str] = Field(None, description="Current profession or job title.")
-    # current_address: Optional[str] = Field(None, description="Residential address where they currently live.")
-    address: Optional[str] = Field(None, description="Address of the individual.")
+    address: Optional[AddressModel] = Field(None, description="Structured address of the individual. Break into house_no, street, locality, city, district, state, pincode, address_type. Put the full verbatim string in 'raw'.")
     role_in_case: Optional[str] = Field(None, description="Role: petitioner / respondent / witness / etc.")
     # name_on_pan: Optional[str] = Field(None, description="Name exactly as it appears on the PAN card.")
     # name_on_aadhaar: Optional[str] = Field(None, description="Name exactly as it appears on the Aadhaar card.")
@@ -88,7 +99,7 @@ class Organization(BaseModel):
     registration_number: Optional[str] = Field(None, description="Registration ID with relevant authority.")
     # date_of_incorporation: Optional[str] = Field(None, description="Date of registration.")
     #registered_at: Optional[str] = Field(None, description="Location/State where registered.")
-    address: Optional[str] = Field(None, description="Full registered office address.")
+    address: Optional[AddressModel] = Field(None, description="Structured registered office address. Break into house_no, street, locality, city, district, state, pincode. Put full verbatim string in 'raw'.")
     contact_info: Optional[str] = Field(None, description="Official phone or email.")
     # website: Optional[str] = Field(None, description="Official URL.")
 
@@ -167,7 +178,7 @@ class Asset(BaseModel):
     asset_type: Optional[str] = Field(None, description="Type (Vehicle/Flat/Plot/etc).")
     identifier: Optional[str] = Field(None, description="Unique ID (Reg No, Flat No, etc).")
     description: Optional[str] = Field(None, description="Exact description from document.")
-    address: Optional[str] = Field(None, description="Location of the asset.")
+    address: Optional[AddressModel] = Field(None, description="Structured location of the asset. Break into house_no, street, locality, city, district, state, pincode. Put full verbatim string in 'raw'.")
     estimated_value_inr: Optional[float] = Field(None, description="Monetary value in INR.")
     attributes: Optional[Dict[str, Any]] = Field(None, description="Floor, Wing, Area, or any additional facts.")
 

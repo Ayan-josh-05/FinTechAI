@@ -23,6 +23,7 @@ from pydantic import BaseModel, model_validator
 from Extraction.utils.helpers import (
     to_none, parse_date, is_organization, org_type,
     clean_party_name, clean_district, dedup_advocates,
+    normalize_address,
 )
 from shared.config import JUNK_ACTS, FINANCIAL_CASE_TYPES
 
@@ -174,9 +175,9 @@ class DocumentModel(BaseModel):
 class PersonModel(BaseModel):
     name         : str
     role         : str
-    address_text : Optional[str] = None
-    is_org       : bool          = False
-    rep_name     : Optional[str] = None   # 'Through' representative name
+    address      : Optional[dict] = None  # structured: {raw, house_no, street, locality, city, district, state, pincode, address_type, address_source, address_confidence}
+    is_org       : bool           = False
+    rep_name     : Optional[str]  = None  # 'Through' representative name
 
 
 class CaseModel(BaseModel):
@@ -225,12 +226,16 @@ def build_case_model(outer: dict, raw: dict) -> CaseModel:
         if not raw_name:
             continue
         clean_name, rep_name = clean_party_name(raw_name)
+        addr = normalize_address(p.get('address'))
+        if addr:
+            addr['address_source']     = 'json'
+            addr['address_confidence'] = 'high'
         persons.append(PersonModel(
-            name         = clean_name,
-            role         = 'petitioner',
-            address_text = to_none(p.get('address')),
-            is_org       = is_organization(clean_name),
-            rep_name     = rep_name,
+            name     = clean_name,
+            role     = 'petitioner',
+            address  = addr,
+            is_org   = is_organization(clean_name),
+            rep_name = rep_name,
         ))
 
     for r in raw.get('respondents', []):
@@ -238,12 +243,16 @@ def build_case_model(outer: dict, raw: dict) -> CaseModel:
         if not raw_name:
             continue
         clean_name, rep_name = clean_party_name(raw_name)
+        addr = normalize_address(r.get('address'))
+        if addr:
+            addr['address_source']     = 'json'
+            addr['address_confidence'] = 'high'
         persons.append(PersonModel(
-            name         = clean_name,
-            role         = 'respondent',
-            address_text = to_none(r.get('address')),
-            is_org       = is_organization(clean_name),
-            rep_name     = rep_name,
+            name     = clean_name,
+            role     = 'respondent',
+            address  = addr,
+            is_org   = is_organization(clean_name),
+            rep_name = rep_name,
         ))
 
     pet_advocates  = dedup_advocates(raw.get('petitioner_advocates', []))

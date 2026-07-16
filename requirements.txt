@@ -20,3 +20,6 @@ pymupdf==1.24.11
 torch
 torchvision
 torchaudio
+rapidfuzz>=3.0.0
+jellyfish>=1.0.0
+sentence-transformers>=2.7.0
