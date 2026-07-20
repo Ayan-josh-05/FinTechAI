@@ -64,6 +64,9 @@ from Extraction.llm_extraction import (
 # ── Utils ───────────────────────────────────────────────────────────────────
 from Extraction.utils.helpers import dedup_assets, to_none, clean_rel_type
 
+# ── Validation ──────────────────────────────────────────────────────────────
+from Extraction.validate_llm import validate_entities
+
 import requests
 from tenacity import retry, wait_exponential, stop_after_attempt
 
@@ -189,6 +192,16 @@ def process_case(json_path: str, pdf_paths: list[str]) -> dict:
     result['assets']            = len(raw_assets)
     result['missing_advocates'] = len(missing_advocates)
     result['judges_found']      = len(judges_data)
+
+    # ── Rule-based validation of LLM-extracted entities ──────────────────
+    judges_data, judges_dropped = validate_entities('judge', judges_data, result['cnr'])
+    raw_assets, assets_dropped  = validate_entities('asset', raw_assets, result['cnr'])
+    validation_dropped = judges_dropped + assets_dropped
+    result['validation_dropped'] = validation_dropped
+    missing_log.extend(
+        f"[validation] {d['entity_type']}.{d['field']}={d['value']!r} failed rule check"
+        for d in validation_dropped
+    )
 
     for asset in raw_assets:
         asset['_source_storage_id'] = next(iter(pdf_texts), None)
