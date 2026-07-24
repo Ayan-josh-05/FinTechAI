@@ -90,7 +90,7 @@ If another service in this repo wants to call this module directly in-process ra
 
 
 ```
-surya_ocr_test/
+OCR/
 ├── extractor/                      # Core, importable Python package
 │   ├── __init__.py                  # Public API: exports `Extractor` (the only public entry point)
 │   ├── models.py                     # Engine-agnostic result model: Block, PageResult dataclasses
