@@ -1,4 +1,5 @@
 .venv/
+venv/
 .env
 .legalai/
 manifest.csv

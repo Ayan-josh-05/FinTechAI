@@ -16,6 +16,7 @@ from typing import Any
 
 from Extraction.utils.helpers import to_none
 from Extraction.validate_llm.field_rules import ENTITY_RULES
+from Extraction.validate_llm.llm_field_checks import check_case
 
 logger = logging.getLogger('pipeline')
 
@@ -69,3 +70,55 @@ def validate_entities(entity_type: str, items: list[dict], context: str = '') ->
         cleaned_items.append(cleaned)
         all_dropped.extend(dropped)
     return cleaned_items, all_dropped
+
+
+def validate_case_llm(case_entities: dict[str, list[dict]], context: str = '') -> tuple[dict[str, list[dict]], list[dict]]:
+    """
+    Run ONE Ollama call covering the whole case (see llm_field_checks.py)
+    — the model is asked to flag any field whose value looks semantically
+    wrong for its field name (generic check, not limited to a fixed set
+    of fields). Every flagged field is independently re-verified against
+    the input before being trusted (see check_case()'s hallucination
+    backstop) — nothing is dropped on the model's word alone.
+
+    case_entities: {'persons': [dict, ...], 'judges': [dict, ...], ...}
+    (each inner dict must be a plain dict — not a Pydantic model — see
+    main.py for the persons->dict / dict->persons conversion at the call site)
+
+    Returns two SEPARATE JSON-serializable structures:
+      cleaned_json — same shape as case_entities, with only verified-bad
+                     fields nulled; everything else untouched. This is
+                     what the next pipeline step / Neo4j insert should
+                     read from.
+      dropped_json — a flat list of what was removed and why:
+                     [{'entity_type', 'index', 'field', 'value',
+                       'reason', 'context'}, ...]. This is for logs/
+                     testing only — it never feeds back into the data
+                     path.
+    """
+    problems = check_case(case_entities, context)
+    if not problems:
+        return case_entities, []
+
+    cleaned = {etype: [dict(e) for e in items] for etype, items in case_entities.items()}
+    dropped_json: list[dict] = []
+
+    for p in problems:
+        entity = cleaned[p['entity_type']][p['index']]
+        field = p['field']
+        value = entity.get(field)
+        dropped_json.append({
+            'entity_type': p['entity_type'],
+            'index'      : p['index'],
+            'field'      : field,
+            'value'      : value,
+            'reason'     : p['reason'],
+            'context'    : context,
+        })
+        entity[field] = None
+        logger.warning(
+            f"[validate_llm] LLM dropped invalid field "
+            f"{p['entity_type']}[{p['index']}].{field}={value!r} ({context}) — {p['reason']}"
+        )
+
+    return cleaned, dropped_json
