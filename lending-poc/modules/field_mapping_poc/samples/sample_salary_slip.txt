@@ -1,0 +1,29 @@
+TechCorp Innovations Pvt. Ltd.
+123 Tech Park, Bengaluru, 560001
+===================================
+PAYSLIP FOR THE MONTH OF: August 2026
+
+Employee Information:
+Name: Jane Doe
+Employee ID: TC-8492
+PAN: ABCDE1234F
+Designation: Senior Software Engineer
+Bank A/C Number: 09876543211234
+
+Earnings:
+Basic Pay: $ 4,500.00
+HRA: $ 1,500.00
+Special Allowance: $ 1,000.00
+-----------------------------------
+Gross Salary: $ 7,000.00
+
+Deductions:
+PF: $ 200.00
+Professional Tax: $ 50.00
+Income Tax: $ 750.00
+-----------------------------------
+Total Deductions: $ 1,000.00
+
+Net Salary: $ 6,000.00
+===================================
+This is a computer generated document and does not require a signature.
