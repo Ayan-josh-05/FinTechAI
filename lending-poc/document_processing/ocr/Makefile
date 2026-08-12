@@ -2,7 +2,7 @@
 # Simple commands for setup and running the OCR service
 
 # Variables
-PYTHON = python3
+PYTHON = python3.11
 VENV_DIR = surya-env
 VENV_PYTHON = $(VENV_DIR)/bin/python
 VENV_PIP = $(VENV_DIR)/bin/pip
