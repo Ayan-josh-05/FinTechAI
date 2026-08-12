@@ -135,7 +135,7 @@ class Extractor:
         """
         try:
             rel = document_path.relative_to(root).with_suffix("")
-            return str(rel).replace("/", "__")
+            return rel.as_posix().replace("/", "__")
         except ValueError:
             # document_path wasn't under root (e.g. a single file was passed directly)
             return document_path.stem
