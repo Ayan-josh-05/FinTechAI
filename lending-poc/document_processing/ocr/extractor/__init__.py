@@ -1,4 +1,4 @@
-"""OCR-powered PDF text-extraction package.
+"""OCR-powered document text-extraction package.
 
 Public API:
     from extractor import Extractor
