@@ -68,7 +68,7 @@ def _load_image_file(image_path: Path) -> List[Image.Image]:
             image = image.convert("RGB")
         return [image]
     except Exception as e:
-        raise ValueError(f"Could not load image file {image_path}: {e}")
+        raise ValueError(f"Could not load image file {image_path}: {e}") from e
 
 
 def find_documents(input_path: str | Path) -> List[Path]:
