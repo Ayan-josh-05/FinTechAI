@@ -79,6 +79,7 @@ async def extract_text(file: UploadFile = File(...)) -> Dict[str, Any]:
     
     # Process the document
     temp_file = None
+    temp_file_path = ""
     try:
         # Create temporary file
         with tempfile.NamedTemporaryFile(
