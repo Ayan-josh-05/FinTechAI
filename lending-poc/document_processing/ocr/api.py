@@ -14,11 +14,10 @@ Endpoints:
 
 import tempfile
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any, Dict
 import os
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
-from fastapi.responses import JSONResponse
 import uvicorn
 
 from extractor import Extractor, DEFAULT_ENGINE
