@@ -1,261 +1,263 @@
 # OCR Text Extraction
 
-A standalone, reusable PDF text-extraction module with a **pluggable OCR engine architecture**. It converts PDF documents into clean, structured, machine-readable output — designed to be plugged into any downstream pipeline (search indexing, LLM ingestion, analytics, etc.) as an independent building block, either as a CLI tool or as an importable Python package.
+A comprehensive document processing system with **pluggable OCR engine architecture**. It extracts text from PDF, PNG, and JPEG files, converting them into clean, structured, machine-readable output. Designed to be used either as a CLI tool, importable Python package, or REST API service.
 
-Ships today with [Surya OCR](https://github.com/datalab-to/surya) as the default (and only) built-in engine, but the OCR backend is fully swappable — see [Pluggable OCR engines](#pluggable-ocr-engines) below.
+Ships with [Surya OCR](https://github.com/datalab-to/surya) as the default engine, with full support for pluggable backends.
 
-## Why this exists
+## Features
 
-Raw OCR output isn't directly usable — it's messy (per-block HTML fragments, layout labels, confidence scores mixed in), and it's usually tightly coupled to one specific OCR library. This project fixes both problems:
+- **Multiple Input Formats**: PDF (multi-page), PNG, JPEG (single page)
+- **Multiple Interfaces**: CLI tool, Python package, REST API
+- **Pluggable OCR Engines**: Swappable backend architecture
+- **Multiple Output Formats**: Plain text, HTML, structured JSON
+- **Production Ready**: FastAPI web service with proper error handling
+- **Easy Development**: Makefile with common development commands
 
-- **Humans** get a readable, well-formatted HTML report to review documents visually.
-- **Machines / other services** get plain text (simple to embed/search/feed to an LLM) **and** structured JSON (field-mapped, for programmatic consumption — databases, APIs, downstream processing).
-- **The OCR backend itself is decoupled** behind a small interface, so swapping Surya for Tesseract, a vLLM-hosted vision model, a cloud OCR API, etc. never requires touching the pipeline, formatter, or CLI — only a new engine adapter.
+## Why This Exists
 
-This makes text extraction a **decoupled, standalone concern**. Any other project can import this package directly (`from extractor import Extractor`) or just read the output files from a known folder, without depending on Surya, vllm/llama.cpp, or any OCR-specific code.
+Raw OCR output isn't directly usable — it's messy and tightly coupled to specific OCR libraries. This project solves both problems:
 
-## Scope (v1)
+- **Humans** get readable, well-formatted HTML reports to review documents visually
+- **Machines** get clean plain text (for embedding/search/LLM ingestion) and structured JSON (for programmatic consumption)
+- **The OCR backend is decoupled** behind a clean interface, making it easy to swap engines without changing pipeline code
+- **Multiple access methods** support different use cases: CLI for batch processing, API for web services, package for integration
 
-- **Input**: PDFs only, for now. (Images like `.png`/`.jpg` are a future extension — the loader will be written so adding them later is trivial, but v1 only wires up PDFs.)
-- **Input location**: defaults to `extraction_input/` (can contain PDFs directly, or PDFs nested inside subfolders), but is **not hardcoded** — the CLI accepts an optional path argument to point at a specific PDF or a different folder instead. See [CLI](#cli) below.
-- **Output location**: one consolidated folder, `extraction_output/`, containing three subfolders — one per output format. Each processed PDF produces one file of the same base name in each subfolder.
-- **OCR engine**: defaults to Surya, selectable via `--engine` (CLI) or the `engine=` constructor argument (package API). Only `surya` ships today, but the architecture supports adding more without changing any existing code.
+## Quick Start
 
-## Installation & Setup
+### Using the Makefile (Recommended)
 
-These steps are relative to this module's own folder (wherever it lives inside a larger repository) — they don't assume this is the repo root.
-
-### Prerequisites
-- Python 3.11+
-- macOS/Linux (Surya's inference backend spawns a local `vllm` or `llama.cpp` process)
-
-### 1. Enter this module's folder
 ```bash
-cd path/to/this/module   # e.g. cd services/ocr-extraction
+# Complete service setup and startup (first time users)
+make start-service
+
+# Individual commands
+make setup                            # Set up the project (creates virtual environment and installs dependencies)
+make cli                              # Process documents with CLI
+make cli-file FILE=path/to/doc.pdf    # Process specific file
+make api                              # Start API server
+make status                           # Check project status
+make help                             # Get help
 ```
 
-### 2. Create and activate a virtual environment (scoped to this module)
+### Manual Setup
+
 ```bash
+# Create virtual environment
 python3.11 -m venv surya-env
-source surya-env/bin/activate        # macOS/Linux
-# surya-env\Scripts\activate         # Windows
-```
+source surya-env/bin/activate
 
-### 3. Install dependencies
-```bash
+# Install dependencies
 pip install -r requirements.txt
-```
-`requirements.txt` currently contains:
-```
-surya-ocr
-pypdfium2
-pillow
-```
-`surya-ocr` pulls in Surya's inference stack (including its `vllm`/`llama.cpp` backend management) — no separate model download step is required; Surya downloads/spawns its own inference backend automatically on first use.
 
-### 4. Add your PDFs
-Drop PDF files (optionally in nested subfolders) into `extraction_input/` inside this module's folder:
-```
-extraction_input/
-├── some_document.pdf
-└── nested_folder/
-    └── another_document.pdf
-```
-
-### 5. Run the extraction
-```bash
+# Run CLI
 python main.py
+
+# Start API server
+uvicorn api:app --host 0.0.0.0 --port 8000 --reload
 ```
-This processes every PDF under `extraction_input/` using the default `surya` engine, and writes `.html`, `.txt`, and `.json` outputs to `extraction_output/html/`, `extraction_output/text/`, `extraction_output/json/` respectively.
 
-**First run note:** Surya spawns its inference backend (vllm/llama.cpp) the first time OCR runs — this can take a bit longer on the very first invocation. Subsequent PDFs processed in the same `python main.py` run reuse the same backend instance (see [Use as a package](#use-as-a-package) for why).
+## Usage
 
-### 6. Check the output
+### 1. Command Line Interface
+
 ```bash
-cat extraction_output/text/some_document.txt      # plain text
-open extraction_output/html/some_document.html    # human-readable report (macOS)
-cat extraction_output/json/some_document.json      # structured JSON
+# Process all documents in default input folder
+python main.py
+
+# Process specific file
+python main.py path/to/document.pdf
+python main.py path/to/image.png
+
+# Process custom folder
+python main.py path/to/folder
+
+# Select OCR engine
+python main.py --engine surya
 ```
 
-### Processing a single file or custom folder (without touching `extraction_input/`)
+**Supported formats**: PDF, PNG, JPEG
+
+### 2. REST API
+
+Start the API server:
 ```bash
-python main.py path/to/specific/file.pdf
-python main.py path/to/some/other/folder
+make api-dev
+# or
+uvicorn api:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### Using it from another service in the same repo
-If another service in this repo wants to call this module directly in-process rather than shelling out to `main.py`, see [Use as a package](#use-as-a-package) below — install this module's `requirements.txt` into that service's environment (or make this module pip-installable/a shared dependency), then `from extractor import Extractor`.
+#### API Endpoints
+
+- **POST /extract** - Upload and process documents
+- **GET /health** - Health check
+- **GET /** - API information
+- **GET /docs** - Interactive API documentation (Swagger UI)
+
+#### Example API Usage
+
+```bash
+# Upload a document for processing
+curl -X POST "http://localhost:8000/extract" \
+  -F "file=@document.pdf"
+
+# Check API health
+curl http://localhost:8000/health
+
+# View interactive docs
+open http://localhost:8000/docs
+```
+
+#### API Response Format
+
+```json
+{
+  "filename": "document.pdf",
+  "file_type": ".pdf",
+  "pages_processed": 3,
+  "extraction": {
+    "text": "Plain text content...",
+    "html": "<html>Formatted content...</html>",
+    "structured_data": {
+      "document": "document",
+      "page_count": 3,
+      "pages": [...]
+    }
+  },
+  "metadata": {
+    "document_name": "document",
+    "processing_engine": "surya"
+  }
+}
+```
+
+### 3. Python Package
+
+```python
+from extractor import Extractor
+
+# Create extractor instance
+extractor = Extractor(engine="surya")
+
+# Process single document
+result = extractor.process_document("path/to/document.pdf")
+print(result.text)        # Plain text
+print(result.html)        # HTML formatted
+print(result.json_data)   # Structured JSON
+
+# Process folder and save outputs
+results = extractor.run(
+    input_path="extraction_input/",
+    output_dir="extraction_output/"
+)
+```
 
 ## Project Structure
 
-
 ```
 surya_ocr_test/
-├── extractor/                      # Core, importable Python package
-│   ├── __init__.py                  # Public API: exports `Extractor` (the only public entry point)
-│   ├── models.py                     # Engine-agnostic result model: Block, PageResult dataclasses
-│   ├── loader.py                     # PDF -> list of PIL Images (page-by-page rendering)
-│   ├── formatter.py                  # Generic PageResult/Block -> plain text / HTML / JSON
-│   ├── pipeline.py                   # `Extractor` class: orchestrates load -> OCR -> format -> save
-│   └── engines/                      # Pluggable OCR backends
-│       ├── __init__.py                # ENGINE_REGISTRY + get_engine() factory
-│       ├── base.py                    # BaseOCREngine ABC — the contract every engine implements
-│       └── surya_engine.py            # SuryaEngine(BaseOCREngine) - wraps Surya's inference API
-├── main.py                          # CLI entry point: `python main.py [path] [--engine NAME]`
-├── extraction_input/                 # Default input folder (PDFs, can have nested subfolders)
-│   └── ... *.pdf
-├── extraction_output/                # Hardcoded output folder (auto-created)
-│   ├── html/
-│   │   └── <pdf_name>.html
-│   ├── text/
-│   │   └── <pdf_name>.txt
-│   └── json/
-│       └── <pdf_name>.json
-├── requirements.txt
+├── extractor/                      # Core Python package
+│   ├── __init__.py                 # Public API exports
+│   ├── models.py                   # Engine-agnostic data models
+│   ├── loader.py                   # Document loading (PDF/PNG/JPEG)
+│   ├── formatter.py                # Output formatting (text/HTML/JSON)
+│   ├── pipeline.py                 # Main Extractor class
+│   └── engines/                    # Pluggable OCR backends
+│       ├── __init__.py             # Engine registry
+│       ├── base.py                 # BaseOCREngine interface
+│       └── surya_engine.py         # Surya OCR implementation
+├── api.py                          # FastAPI web service
+├── main.py                         # CLI entry point
+├── Makefile                        # Development commands
+├── requirements.txt                # Dependencies
+├── extraction_input/               # Default input folder
+├── extraction_output/              # Default output folder
+│   ├── html/                       # HTML reports
+│   ├── text/                       # Plain text files
+│   └── json/                       # Structured JSON data
 └── README.md
 ```
 
-## Pluggable OCR engines
+## Development Commands
 
-The pipeline never talks to Surya (or any OCR library) directly. It only depends on:
+The Makefile provides convenient commands for development:
 
-1. **`extractor/engines/base.py` — `BaseOCREngine`**, an abstract class with a single required method:
-   ```python
-   class BaseOCREngine(ABC):
-       @abstractmethod
-       def run(self, images: List[PIL.Image]) -> List[PageResult]:
-           ...
-   ```
-2. **`extractor/models.py` — `Block` / `PageResult`**, a small engine-agnostic dataclass contract that every engine must translate its native output into:
-   ```python
-   @dataclass
-   class Block:
-       label: str            # "Text", "SectionHeader", "Table", "Picture", ...
-       html: str              # recognized content as HTML
-       bbox: List[float]      # [x0, y0, x1, y1]
-       confidence: float = 1.0
-       reading_order: int = 0
-       skipped: bool = False  # True for non-OCR'd blocks (e.g. pure images)
+```bash
+make help              # Show all available commands
+make start-service     # Complete setup and start API (one-command solution)
+make setup             # Set up development environment
+make install           # Update dependencies
+make clean             # Clean temporary files
 
-   @dataclass
-   class PageResult:
-       blocks: List[Block]
-   ```
+make cli               # Run CLI on default folder
+make cli-file FILE=path/to/doc.pdf  # Process specific file
 
-`formatter.py` and `pipeline.py` are written entirely against this model — they have zero knowledge of Surya's actual object shapes. All Surya-specific translation logic lives in one place: `extractor/engines/surya_engine.py`.
-
-### Adding a new OCR engine
-
-1. Create `extractor/engines/your_engine.py`:
-   ```python
-   from .base import BaseOCREngine
-   from ..models import Block, PageResult
-
-   class YourEngine(BaseOCREngine):
-       def run(self, images):
-           # call your OCR backend, then map its output into Block/PageResult
-           return [PageResult(blocks=[...]) for image in images]
-   ```
-2. Register it in `extractor/engines/__init__.py`:
-   ```python
-   ENGINE_REGISTRY = {
-       "surya": SuryaEngine,
-       "your_engine": YourEngine,
-   }
-   ```
-3. Done. Use it immediately, with **no other file needing changes**:
-   ```bash
-   python main.py --engine your_engine
-   ```
-   ```python
-   Extractor(engine="your_engine")
-   ```
-
-You can also skip the registry entirely and inject an already-constructed engine instance directly (handy for tests/mocks):
-```python
-Extractor(engine=YourEngine())
+make api               # Start API server
+make status            # Show project status
 ```
 
-## How it works (pipeline)
+## Installation & Setup
 
-1. **Discover** — `pipeline.py` recursively walks `extraction_input/` and collects every `.pdf` file (including nested subfolders).
-2. **Load** — `loader.py` opens each PDF with `pypdfium2` and renders every page to a `PIL.Image` at a DPI/scale tuned for OCR accuracy. Handles cleanup (`pdf.close()`).
-3. **OCR** — the selected engine (`extractor/engines/*.py`) runs all page images for a document through its OCR backend and returns a list of engine-agnostic `PageResult` objects (one per page).
-4. **Format** — `formatter.py` converts that generic result into three parallel outputs (see below).
-5. **Save** — each PDF's three outputs are written to `extraction_output/html/`, `extraction_output/text/`, `extraction_output/json/` using the PDF's base filename.
+### Prerequisites
+- Python 3.11+
+- macOS/Linux (Surya requires local inference backend)
 
-## Output formats
+### Dependencies
 
-### 1. HTML (`extraction_output/html/<name>.html`) — for humans
-A styled, page-by-page report (clean typography, tables rendered as real `<table>`, no layout-label clutter). Meant for visual review in a browser, not for parsing.
+The project includes both core OCR dependencies and API dependencies:
 
-### 2. Plain text (`extraction_output/text/<name>.txt`) — for machines (simple case)
-All block HTML stripped down to plain text, concatenated in reading order, with clear page-break markers. No markup, no metadata — just the text of the document, ready for embedding, search indexing, or feeding into an LLM prompt. This is the "lowest common denominator" format: any consumer can `open(...).read()` and get usable text with zero parsing logic.
+```txt
+# Core OCR dependencies
+surya-ocr
+pypdfium2
+pillow
 
-### 3. JSON (`extraction_output/json/<name>.json`) — for machines (structured case)
+# API dependencies
+fastapi
+python-multipart
+uvicorn[standard]
+```
 
-This needs a real field-mapping design, since OCR output is block-oriented (layout blocks with generic labels), not domain-specific fields. Here's how it maps into JSON:
+### First-time Setup
 
-**What every engine gives us, per PDF (via the `Block`/`PageResult` model):**
-- A list of pages
-- Each page → list of blocks, each block has:
-  - `label` (canonicalized layout type: `Text`, `SectionHeader`, `PageHeader`, `Table`, `ListGroup`, `Picture`, ...)
-  - `html` (recognized content, as HTML — tables come back as full `<table>`, math as `<math>`)
-  - `bbox` (position on the page)
-  - `confidence` (0–1, how sure the engine is)
-  - `reading_order` (0-indexed position in the page)
-  - `skipped` (true for pure visual blocks like `Picture`, not OCR'd)
+1. **Clone and enter the project directory**
+2. **Set up environment**: `make setup`
+3. **Add documents** to `extraction_input/` folder
+4. **Run extraction**: `make cli` or `make api-dev`
 
-**How this maps into our JSON schema:**
+**Note**: First run downloads Surya models and starts inference backend, which may take longer initially.
 
-Rather than inventing arbitrary business fields (which OCR has no way of knowing — it doesn't know what a "case number" or "invoice total" is), the JSON output stays **structurally faithful to what the engine actually detected**, but cleaned up and renamed into a stable, predictable schema. Field mapping:
+## Output Formats
 
-| Our JSON field | Source (`Block`/`PageResult` field) | Notes |
-|---|---|---|
-| `document` | PDF filename | top-level identifier |
-| `page_count` | number of pages processed | |
-| `pages` | list, one entry per page | |
-| `pages[i].page_number` | 1-indexed loop counter | |
-| `pages[i].blocks` | `page_result.blocks` | filtered: `skipped` blocks excluded |
-| `blocks[j].type` | `block.label` | renamed for clarity (`Text`, `Table`, `SectionHeader`, etc.) |
-| `blocks[j].order` | `block.reading_order` | preserves reading order for reconstruction |
-| `blocks[j].text` | `block.html`, HTML-stripped | plain text version of this block |
-| `blocks[j].html` | `block.html` | raw HTML kept too — useful if a table/structure needs to be preserved (e.g. `<table>` markup for a table block) |
-| `blocks[j].confidence` | `block.confidence` | lets downstream consumers filter/flag low-confidence blocks |
-| `blocks[j].bbox` | `block.bbox` | `[x0, y0, x1, y1]` — useful if a consumer needs position (e.g. highlighting in a viewer) |
+### 1. HTML (`extraction_output/html/`) — Human-readable
+Styled, page-by-page reports with clean typography. Tables rendered as proper `<table>` elements, suitable for browser viewing and visual document review.
 
-This gives downstream consumers **three levels of granularity to choose from**, without us guessing at business-specific fields we can't reliably extract from generic OCR:
-- Want just the text? → concatenate `blocks[*].text` in `order`.
-- Want to reconstruct tables/structure? → use `blocks[*].html` where `type == "Table"`.
-- Want to filter noisy content? → use `confidence` to drop/flag low-confidence blocks.
-- Want visual mapping? → use `bbox`.
+### 2. Plain Text (`extraction_output/text/`) — Machine-friendly
+Clean text with layout stripped, concatenated in reading order with page breaks. Ready for embedding, search indexing, or LLM consumption.
 
-**Important limitation to be upfront about:** OCR engines detect *layout* (what kind of block something is — text, header, table) but do **not** understand document semantics (they don't know "this text is the case number" or "this table's second column is the verdict"). So the JSON schema above is a **generic, faithful structuring of OCR output** — not a domain-specific extraction (like "case_number", "judge_name", etc.). If field-level business extraction is needed later (e.g. for legal documents — case number, parties, verdict), that would be a **separate downstream step** (e.g. regex/LLM-based extraction running on top of this JSON's `text`/`blocks`), layered on top of this project rather than baked into the OCR step itself.
+### 3. Structured JSON (`extraction_output/json/`) — Programmatic
+Detailed structured data preserving:
+- Document metadata and page count
+- Per-page block information (text, tables, headers)
+- Confidence scores and bounding boxes
+- Reading order and block types
+- Both plain text and HTML versions of each block
 
-Example JSON shape:
+Example JSON structure:
 ```json
 {
-  "document": "S4",
-  "page_count": 4,
+  "document": "filename",
+  "page_count": 2,
   "pages": [
     {
       "page_number": 1,
       "blocks": [
         {
-          "type": "PageHeader",
-          "order": 0,
-          "text": "1 न्यायनिर्णय सं.पौ. ख. क्र. ७२२/२०२०",
-          "html": "<p>...</p>",
-          "confidence": 0.97,
-          "bbox": [34.0, 12.0, 560.0, 48.0]
-        },
-        {
           "type": "Text",
-          "order": 1,
-          "text": "प्राप्त दिनांक : २७.०७.२०२०...",
-          "html": "<p>...</p>",
+          "order": 0,
+          "text": "Plain text content",
+          "html": "<p>HTML content</p>",
           "confidence": 0.95,
-          "bbox": [34.0, 60.0, 560.0, 140.0]
+          "bbox": [x0, y0, x1, y1]
         }
       ]
     }
@@ -263,50 +265,125 @@ Example JSON shape:
 }
 ```
 
-## Use as a package
+## Pluggable OCR Engines
 
-`Extractor` is the **single public entry point** of this package — everything (CLI included) goes through it.
+The system uses a clean engine abstraction that makes swapping OCR backends easy:
+
+### Engine Interface
 
 ```python
-from extractor import Extractor
-
-# Pick an engine by name (default is "surya")
-extractor = Extractor(engine="surya")
-
-# Process one PDF in-memory (no files written) - great for embedding in another service
-result = extractor.process_pdf("extraction_input/some/nested/file.pdf")
-
-result.text        # plain text string
-result.json_data    # dict, same shape as the JSON file
-result.html         # HTML report string
-
-# Or process a whole folder and write html/text/json outputs to disk
-results = extractor.run(input_path="extraction_input/", output_dir="extraction_output/")
+class BaseOCREngine(ABC):
+    @abstractmethod
+    def run(self, images: List[PIL.Image]) -> List[PageResult]:
+        pass
 ```
 
-You can also inject a custom or mocked engine instance directly, instead of a name:
+### Adding New Engines
+
+1. **Create engine class** in `extractor/engines/your_engine.py`:
 ```python
-from extractor import Extractor
-from my_custom_engine import MyEngine
+from .base import BaseOCREngine
+from ..models import Block, PageResult
 
-extractor = Extractor(engine=MyEngine())
+class YourEngine(BaseOCREngine):
+    def run(self, images):
+        # Process images with your OCR backend
+        # Return PageResult objects with Block data
+        return [PageResult(blocks=[...]) for image in images]
 ```
 
-Since the same `Extractor` object reuses one engine instance across every PDF it processes, any backend server the engine spawns (e.g. Surya's vllm/llama.cpp process) only starts once per `Extractor`, not once per document — construct it once and reuse it for batch runs.
+2. **Register engine** in `extractor/engines/__init__.py`:
+```python
+ENGINE_REGISTRY = {
+    "surya": SuryaEngine,
+    "your_engine": YourEngine,
+}
+```
 
-## CLI
-
+3. **Use immediately**:
 ```bash
-python main.py                                # processes everything under extraction_input/ (default)
-python main.py path/to/file.pdf                # processes a single specific PDF
-python main.py path/to/folder                  # recursively processes all PDFs in a custom folder
-python main.py path/to/folder --engine surya    # explicitly select an OCR engine (default: surya)
+python main.py --engine your_engine
 ```
-Recursively finds every `.pdf` under the given path (or `extraction_input/` if no path is given), runs OCR, and writes matching `.html`, `.txt`, `.json` files into `extraction_output/html/`, `extraction_output/text/`, `extraction_output/json/` respectively (same base filename as the source PDF, folder structure flattened by filename — if there's a name collision across nested folders, the relative path will be used to disambiguate).
 
-## Accuracy considerations (multilingual documents)
+### Engine Data Model
 
-Since sample documents are in Hindi/Marathi/mixed scripts:
-- Render scale defaults to produce ~150–200 DPI equivalent (capped at ~2048px width) for legible text — this is the single biggest accuracy lever per Surya's own docs.
-- Room to add preprocessing (deskew/binarize) for scanned/blurry documents later, without changing the public API.
-- `confidence` scores are surfaced in JSON specifically so low-quality OCR on non-Latin scripts can be flagged/reviewed rather than silently trusted.
+All engines must translate their output into standardized `Block` and `PageResult` objects:
+
+```python
+@dataclass
+class Block:
+    label: str            # "Text", "Table", "SectionHeader", etc.
+    html: str             # Content as HTML
+    bbox: List[float]     # [x0, y0, x1, y1] position
+    confidence: float     # 0-1 confidence score
+    reading_order: int    # Order within page
+    skipped: bool         # True for non-text blocks (images)
+```
+
+This ensures the pipeline, formatters, and API work consistently regardless of the underlying OCR engine.
+
+## API Documentation
+
+### Interactive Documentation
+When the API server is running, visit:
+- **Swagger UI**: `http://localhost:8000/docs`
+- **ReDoc**: `http://localhost:8000/redoc`
+
+### Rate Limits and File Limits
+- **Max file size**: 50MB
+- **Supported formats**: PDF, PNG, JPEG
+- **Concurrent processing**: Single-threaded (suitable for most use cases)
+
+### Error Handling
+The API provides detailed error responses for:
+- Unsupported file formats
+- File size limits
+- Processing errors
+- Invalid requests
+
+## Accuracy Considerations
+
+### Multilingual Support
+Optimized for multilingual documents including Indic scripts:
+- **Render scale**: Tuned for ~150-200 DPI equivalent
+- **Image preprocessing**: Handles various scan qualities
+- **Confidence scoring**: Surface quality metrics for review
+
+### Performance Tips
+- **Batch processing**: Use CLI for multiple documents
+- **Engine reuse**: Single `Extractor` instance processes multiple docs efficiently
+- **Memory management**: Automatic cleanup of temporary files and resources
+
+## Contributing
+
+### Development Setup
+```bash
+make setup        # Initial setup
+make clean        # Clean temporary files
+make status       # Check environment
+```
+
+### Code Style
+```bash
+make format       # Format code (requires black)
+make lint         # Lint code (requires flake8)
+```
+
+### Testing
+```bash
+make test-api     # Test API endpoints
+```
+
+## Limitations and Future Enhancements
+
+### Current Limitations
+- **Semantic extraction**: OCR detects layout but not document-specific fields (case numbers, dates, etc.)
+- **Single-threaded processing**: API processes one document at a time
+- **Local inference**: Requires local compute for Surya backend
+
+### Potential Enhancements
+- Field-level extraction for specific document types
+- Parallel processing support
+- Cloud OCR engine adapters (Google Vision, AWS Textract)
+- Document preprocessing pipeline (deskew, denoise)
+- WebSocket support for real-time processing updates
