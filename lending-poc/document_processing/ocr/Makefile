@@ -2,7 +2,7 @@
 # Simple commands for setup and running the OCR service
 
 # Variables
-PYTHON = python3.11
+PYTHON = python3.12
 VENV_DIR = surya-env
 VENV_PYTHON = $(VENV_DIR)/bin/python
 VENV_PIP = $(VENV_DIR)/bin/pip
@@ -31,7 +31,7 @@ start-service: ## Complete service setup and startup (setup + install + start AP
 	@echo "Step 1/4: Checking virtual environment..."
 	@if [ ! -d "$(VENV_DIR)" ]; then \
 		echo "📦 Creating virtual environment..."; \
-		$(PYTHON) -m venv $(VENV_DIR); \
+		$(PYTHON) -m venv $(VENV_DIR) || { echo "❌ Failed to create virtual environment. Is $(PYTHON) installed?"; exit 1; }; \
 		echo "✅ Virtual environment created"; \
 	else \
 		echo "✅ Virtual environment exists"; \
