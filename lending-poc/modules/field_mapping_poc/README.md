@@ -9,7 +9,7 @@ found, and any extra fields the model discovers flagged separately.
 ## Project layout
 
 ```
-legalai_field_mapping_poc/
+field_mapping_poc/
 ├── config.py                    # model name, ollama host, retries, flagging keys
 ├── main.py                      # CLI demo entry point
 ├── core/
@@ -22,8 +22,6 @@ legalai_field_mapping_poc/
 │   └── identity_card.json       # nested schema example (address object)
 ├── samples/
 │   └── sample_ocr_text.txt      # messy OCR-style salary slip for the demo
-└── tests/
-    └── test_response_parser.py  # offline tests, no Ollama needed
 ```
 
 ## Setup
@@ -44,12 +42,51 @@ python main.py
 python main.py --schema schemas/examples/identity_card.json --text samples/sample_ocr_text.txt
 ```
 
-## Run the offline tests (no Ollama required)
 
-```bash
-python tests/test_response_parser.py
-# or, with pytest installed:
-python -m pytest tests/ -v
+## HOW TO USE THIS IN THIS PROJECT
+
+To integrate this POC into the wider project pipeline, you only need to interact with the `FieldMapper` object.
+
+### 1. Object to create
+
+Create an instance of `FieldMapper` (located in `core/mapper.py`). By default, it will initialize its own `OllamaClient`, but you can also pass in a custom configured client if needed.
+
+```python
+from core.mapper import FieldMapper
+
+mapper = FieldMapper()
+```
+
+### 2. Method to call
+
+Call the `map_fields()` method on your `FieldMapper` instance.
+
+### 3. Parameters to give
+
+The `map_fields` method takes two arguments:
+- `schema` (`Dict[str, Any]`): An arbitrary JSON dictionary describing the expected fields (keys are field names, values are type/description hints).
+- `document_text` (`str`): The raw OCR (or translated) text that you want to extract information from.
+
+### Example Usage
+
+```python
+from core.mapper import FieldMapper
+
+# 1. Define your schema
+target_schema = {
+    "employeeName": "string",
+    "grossSalary": "number",
+    "dateOfJoining": "date (DD-MM-YYYY)"
+}
+
+# 2. Provide the raw text
+ocr_text = "..."
+
+# 3. Create the mapper and extract fields
+mapper = FieldMapper()
+extracted_data = mapper.map_fields(schema=target_schema, document_text=ocr_text)
+
+print(extracted_data)
 ```
 
 ## Design notes

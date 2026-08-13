@@ -38,9 +38,9 @@ if __name__ == "__main__":
     schema_file = "schemas/examples/salary_slip.json"
     
     # Run the clean sample
-    clean_text = "test_inputs/sample_salary_slip.txt"
+    clean_text = "samples/sample_salary_slip.txt"
     run_sample(schema_file, clean_text)
     
     # Run the noisy OCR sample
-    noisy_text = "test_inputs/sample_salary_slip_noisy.txt"
+    noisy_text = "samples/sample_salary_slip_noisy.txt"
     run_sample(schema_file, noisy_text)

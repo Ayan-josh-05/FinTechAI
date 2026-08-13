@@ -112,12 +112,7 @@ def reconcile_with_schema(
     for key, value in model_output.items():
         if key in schema:
             continue
-        if isinstance(value, dict):
-            # Nested extra object: recurse with an empty schema so every
-            # leaf inside it also gets flagged as llm_added.
-            result[key] = reconcile_with_schema({}, value)
-        else:
-            result[key] = _wrap_extra(value)
+        result[key] = _wrap_extra(value)
 
     return result
 

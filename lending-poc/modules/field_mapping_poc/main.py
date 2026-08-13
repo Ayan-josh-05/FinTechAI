@@ -27,15 +27,12 @@ logging.basicConfig(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="LegalAI Field Mapping POC")
-    parser.add_argument("--schema", type=Path,
+    parser.add_argument("--schema", type=Path, default=Path("schemas/examples/salary_slip.json"),
                          help="Path to a JSON file describing the target schema")
-    parser.add_argument("--text", type=Path,
+    parser.add_argument("--text", type=Path, default=Path("samples/sample_ocr_text.txt"),
                          help="Path to a text file containing raw OCR output")
     
     args = parser.parse_args()
-    if args.schema is None or args.text is None:
-        raise ValueError("Both --schema and --text paths must be provided.")
-        
     return args
 
 
