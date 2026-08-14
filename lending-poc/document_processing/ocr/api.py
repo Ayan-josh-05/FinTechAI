@@ -67,7 +67,7 @@ async def extract_text(file: UploadFile = File(...)) -> Dict[str, Any]:
         )
     
     # Check file size
-    content = await file.read()
+content = await file.read(MAX_FILE_SIZE + 1)
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=413, 
