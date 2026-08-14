@@ -6,24 +6,6 @@ schema (arbitrary JSON, not a fixed Pydantic model) and returns a
 schema-shaped JSON with values filled in, `null` where nothing was
 found, and any extra fields the model discovers flagged separately.
 
-## Project layout
-
-```
-field_mapping_poc/
-├── config.py                    # model name, ollama host, retries, flagging keys
-├── main.py                      # CLI demo entry point
-├── core/
-│   ├── ollama_client.py         # thin wrapper around the ollama lib + retries
-│   ├── prompt_builder.py        # builds the system/user prompt from schema + text
-│   ├── response_parser.py       # JSON repair + schema reconciliation
-│   └── mapper.py                # FieldMapper — orchestrates the three above
-├── schemas/examples/
-│   ├── salary_slip.json         # flat schema example
-│   └── identity_card.json       # nested schema example (address object)
-├── samples/
-│   └── sample_ocr_text.txt      # messy OCR-style salary slip for the demo
-```
-
 ## Setup
 
 ```bash
