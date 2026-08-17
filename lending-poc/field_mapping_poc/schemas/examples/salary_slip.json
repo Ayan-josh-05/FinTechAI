@@ -1,0 +1,11 @@
+{
+  "employeeName": "string",
+  "employeeId": "string",
+  "panNumber": "string",
+  "designation": "string",
+  "payPeriod": "string, e.g. 'March 2026'",
+  "basicPay": "number",
+  "grossSalary": "number",
+  "netSalary": "number",
+  "bankAccountNumber": "string"
+}

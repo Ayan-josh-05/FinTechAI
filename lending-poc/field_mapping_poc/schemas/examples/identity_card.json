@@ -1,0 +1,12 @@
+{
+  "fullName": "string",
+  "documentNumber": "string",
+  "dateOfBirth": "date (DD-MM-YYYY)",
+  "gender": "string",
+  "address": {
+    "line1": "string",
+    "city": "string",
+    "state": "string",
+    "pincode": "string"
+  }
+}

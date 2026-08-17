@@ -1,0 +1,25 @@
+XYZ TECHNOLOGIES PVT LTD
+Payslip for the month of March 2026
+
+Employee Name : Ishaan Deshmukh
+Employee ID   : JSW-1042
+Designation   : Associate Software Engineer
+PAN           : ABCDE1234F
+UAN Number    : 101234567890
+
+Earnings                          Amount (Rs.)
+Basic Pay                         45,000
+HRA                                18,000
+Special Allowance                 12,000
+Gross Salary                       75,000
+
+Deductions
+Provident Fund                      5,400
+Professional Tax                      200
+Income Tax (TDS)                    4,400
+
+Net Salary (in words: Rupees Sixty Five Thousand Only)
+Net Salary                         65,000
+
+Bank A/c No.  : XXXXXXXX7890
+Bank Name     : HDFC Bank
