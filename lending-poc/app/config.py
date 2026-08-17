@@ -11,7 +11,6 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     DATABASE_URL: str
     LOG_LEVEL: str = "INFO"
-    ENCRYPTION_KEY: str
 
 
 settings = Settings()
