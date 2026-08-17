@@ -13,12 +13,12 @@ export type ExtractFileResult =
 
 /**
  * POSTs a single file to /extract. The backend processes one file per call,
- * and the required multipart field name is "File" (capital F) — this is a
- * deliberate backend contract requirement, not a typo.
+ * and the multipart field name must be "file" (lowercase), matching the
+ * `file: UploadFile` parameter name in document_processing/ocr/api.py.
  */
 async function extractOne(file: File): Promise<ExtractResponse> {
   const formData = new FormData()
-  formData.append('File', file)
+  formData.append('file', file)
 
   const response = await apiClient.post('/extract', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
