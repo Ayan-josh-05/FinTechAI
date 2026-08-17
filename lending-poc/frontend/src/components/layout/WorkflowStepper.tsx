@@ -31,8 +31,8 @@ export function WorkflowStepper({ currentStep, maxReachedIndex }: WorkflowSteppe
   const currentIndex = WORKFLOW_STEPS.indexOf(currentStep)
 
   return (
-    <nav aria-label="Workflow progress" className="w-full overflow-x-auto">
-      <ol className="flex min-w-max items-center gap-1 sm:gap-2">
+    <nav aria-label="Workflow progress" className="w-full overflow-x-auto pb-1">
+      <ol className="flex min-w-max items-center">
         {WORKFLOW_STEPS.map((step, index) => {
           const isCurrent = step === currentStep
           const isCompleted = index < currentIndex
@@ -46,24 +46,25 @@ export function WorkflowStepper({ currentStep, maxReachedIndex }: WorkflowSteppe
                 aria-current={isCurrent ? 'step' : undefined}
                 onClick={() => navigate(STEP_PATHS[step])}
                 className={cn(
-                  'flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors sm:text-sm',
-                  isCurrent && 'border-blue-600 bg-blue-600 text-white',
+                  'flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-150 sm:text-sm',
+                  isCurrent && 'border-brand-600 bg-brand-600 text-white shadow-sm',
                   !isCurrent &&
                     isCompleted &&
-                    'border-green-200 bg-green-50 text-green-800 hover:bg-green-100',
+                    'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
                   !isCurrent &&
                     !isCompleted &&
                     !isDisabled &&
-                    'border-gray-300 bg-white text-gray-700 hover:bg-gray-50',
-                  isDisabled && 'cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400'
+                    'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50',
+                  isDisabled && 'cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300'
                 )}
               >
                 <span
                   className={cn(
-                    'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px]',
-                    isCurrent && 'bg-white text-blue-600',
-                    !isCurrent && isCompleted && 'bg-green-600 text-white',
-                    !isCurrent && !isCompleted && 'bg-gray-200 text-gray-600'
+                    'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold',
+                    isCurrent && 'bg-white text-brand-600',
+                    !isCurrent && isCompleted && 'bg-emerald-500 text-white',
+                    !isCurrent && !isCompleted && !isDisabled && 'bg-slate-200 text-slate-600',
+                    isDisabled && 'bg-slate-100 text-slate-300'
                   )}
                   aria-hidden="true"
                 >
@@ -72,7 +73,13 @@ export function WorkflowStepper({ currentStep, maxReachedIndex }: WorkflowSteppe
                 {STEP_LABELS[step]}
               </button>
               {index < WORKFLOW_STEPS.length - 1 && (
-                <span className="mx-1 h-px w-4 bg-gray-300 sm:w-6" aria-hidden="true" />
+                <span
+                  className={cn(
+                    'mx-1.5 h-px w-4 shrink-0 transition-colors duration-150 sm:w-8',
+                    index < currentIndex ? 'bg-emerald-300' : 'bg-slate-200'
+                  )}
+                  aria-hidden="true"
+                />
               )}
             </li>
           )

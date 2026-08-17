@@ -27,28 +27,31 @@ export function JsonViewer({ data, className }: JsonViewerProps) {
   }, [data])
 
   return (
-    <div className={cn('rounded-md border border-gray-200 bg-white', className)}>
-      <div className="flex items-center justify-end gap-2 border-b border-gray-200 bg-gray-50 px-3 py-2">
+    <div
+      className={cn(
+        'overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card',
+        className
+      )}
+    >
+      <div className="flex items-center justify-end gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2">
         <Button
           type="button"
-          className="bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-100"
+          variant="ghost"
+          size="sm"
           onClick={() => setExpandSignal((n) => n + 1)}
         >
           Expand all
         </Button>
         <Button
           type="button"
-          className="bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-100"
+          variant="ghost"
+          size="sm"
           onClick={() => setCollapseSignal((n) => n + 1)}
         >
           Collapse all
         </Button>
-        <Button
-          type="button"
-          className="bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-100"
-          onClick={handleCopy}
-        >
-          {copied ? 'Copied' : 'Copy JSON'}
+        <Button type="button" variant="secondary" size="sm" onClick={handleCopy}>
+          {copied ? 'Copied ✓' : 'Copy JSON'}
         </Button>
       </div>
       <div className="max-h-[32rem] overflow-auto p-3 font-mono text-xs">
@@ -89,14 +92,14 @@ function JsonNode({ value, nodeKey, depth, collapseSignal, expandSignal, isLast 
     if (!expanded) setExpanded(true)
   }
 
-  const keyLabel = nodeKey !== null ? <span className="text-blue-700">"{nodeKey}"</span> : null
+  const keyLabel = nodeKey !== null ? <span className="text-brand-700">"{nodeKey}"</span> : null
   const comma = isLast ? '' : ','
 
   if (value === null) {
     return (
       <Leaf
         keyLabel={keyLabel}
-        valueNode={<span className="text-gray-400">null</span>}
+        valueNode={<span className="text-slate-400">null</span>}
         comma={comma}
       />
     )
@@ -105,7 +108,7 @@ function JsonNode({ value, nodeKey, depth, collapseSignal, expandSignal, isLast 
     return (
       <Leaf
         keyLabel={keyLabel}
-        valueNode={<span className="text-gray-400">undefined</span>}
+        valueNode={<span className="text-slate-400">undefined</span>}
         comma={comma}
       />
     )
@@ -150,7 +153,7 @@ function JsonNode({ value, nodeKey, depth, collapseSignal, expandSignal, isLast 
       <Leaf
         keyLabel={keyLabel}
         valueNode={
-          <span className="text-gray-500">
+          <span className="text-slate-500">
             {openBracket}
             {closeBracket}
           </span>
@@ -168,15 +171,15 @@ function JsonNode({ value, nodeKey, depth, collapseSignal, expandSignal, isLast 
           aria-expanded={expanded}
           aria-controls={reactId}
           onClick={() => setExpanded((e) => !e)}
-          className="mt-0.5 w-4 shrink-0 select-none text-gray-500 hover:text-gray-800"
+          className="mt-0.5 w-4 shrink-0 select-none text-slate-500 hover:text-slate-800"
         >
           {expanded ? '▾' : '▸'}
         </button>
         <div>
           {keyLabel && <>{keyLabel}: </>}
-          <span className="text-gray-500">{openBracket}</span>
+          <span className="text-slate-500">{openBracket}</span>
           {!expanded && (
-            <span className="text-gray-400">
+            <span className="text-slate-400">
               {' '}
               {entries.length}{' '}
               {isArray
@@ -185,7 +188,7 @@ function JsonNode({ value, nodeKey, depth, collapseSignal, expandSignal, isLast 
             </span>
           )}
           {!expanded && (
-            <span className="text-gray-500">
+            <span className="text-slate-500">
               {closeBracket}
               {comma}
             </span>
@@ -193,7 +196,7 @@ function JsonNode({ value, nodeKey, depth, collapseSignal, expandSignal, isLast 
         </div>
       </div>
       {expanded && (
-        <div id={reactId} className="ml-5 border-l border-gray-100 pl-3">
+        <div id={reactId} className="ml-5 border-l border-slate-100 pl-3">
           {entries.map(([k, v], i) => (
             <JsonNode
               key={k}
@@ -205,7 +208,7 @@ function JsonNode({ value, nodeKey, depth, collapseSignal, expandSignal, isLast 
               isLast={i === entries.length - 1}
             />
           ))}
-          <div className="text-gray-500">
+          <div className="text-slate-500">
             {closeBracket}
             {comma}
           </div>

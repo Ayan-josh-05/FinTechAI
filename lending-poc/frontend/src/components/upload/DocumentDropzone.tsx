@@ -46,14 +46,27 @@ export function DocumentDropzone({ label, onFileSelected, error }: DocumentDropz
         onDragLeave={() => setIsDragActive(false)}
         onDrop={handleDrop}
         className={cn(
-          'flex cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed px-4 py-8 text-center transition-colors',
-          isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-white hover:bg-gray-50',
-          error && 'border-red-400'
+          'flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-8 text-center transition-all duration-150',
+          isDragActive
+            ? 'border-brand-500 bg-brand-50 shadow-inner'
+            : 'border-slate-300 bg-slate-50/50 hover:border-brand-300 hover:bg-brand-50/40',
+          error && 'border-red-400 bg-red-50/40'
         )}
       >
-        <p className="text-sm font-medium text-gray-700">Drag &amp; drop {label} here</p>
-        <p className="mt-1 text-xs text-gray-500">or click to browse</p>
-        <p className="mt-2 text-xs text-gray-400">
+        <div
+          className={cn(
+            'mb-2 flex h-9 w-9 items-center justify-center rounded-full text-base transition-colors',
+            isDragActive ? 'bg-brand-100 text-brand-600' : 'bg-slate-100 text-slate-400'
+          )}
+          aria-hidden="true"
+        >
+          ↑
+        </div>
+        <p className="text-sm font-medium text-slate-700">Drag &amp; drop {label} here</p>
+        <p className="mt-1 text-xs text-slate-500">
+          or <span className="font-medium text-brand-600">browse</span> to upload
+        </p>
+        <p className="mt-2 text-xs text-slate-400">
           Accepted: {ACCEPTED_FILE_EXTENSIONS.join(', ')} — up to 50MB
         </p>
       </div>
@@ -70,7 +83,7 @@ export function DocumentDropzone({ label, onFileSelected, error }: DocumentDropz
           e.target.value = ''
         }}
       />
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      {error && <p className="mt-1.5 text-xs font-medium text-red-600">{error}</p>}
     </div>
   )
 }

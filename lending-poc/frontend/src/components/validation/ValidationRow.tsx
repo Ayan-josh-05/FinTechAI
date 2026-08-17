@@ -23,35 +23,35 @@ export function ValidationRow({ result }: ValidationRowProps) {
 
   return (
     <>
-      <tr className="border-b border-gray-100">
-        <td className="px-3 py-2 text-sm font-medium text-gray-900">{result.check_type}</td>
-        <td className="px-3 py-2 text-sm text-gray-700">
+      <tr className="transition-colors hover:bg-slate-50">
+        <td className="px-4 py-3 text-sm font-medium text-slate-900">{result.check_type}</td>
+        <td className="px-4 py-3 text-sm text-slate-700">
           {readEvidenceField(evidence, 'source_text')}
         </td>
-        <td className="px-3 py-2 text-sm text-gray-700">
+        <td className="px-4 py-3 text-sm text-slate-700">
           {readEvidenceField(evidence, 'target_text')}
         </td>
-        <td className="px-3 py-2 text-sm text-gray-700">{result.score.toFixed(1)}</td>
-        <td className="px-3 py-2">
+        <td className="px-4 py-3 text-sm text-slate-700">{result.score.toFixed(1)}</td>
+        <td className="px-4 py-3">
           <StatusBadge status={result.passed ? 'PASS' : 'FAIL'} />
         </td>
-        <td className="px-3 py-2 text-right">
+        <td className="px-4 py-3 text-right">
           <button
             type="button"
             onClick={() => setExpanded((e) => !e)}
             aria-expanded={expanded}
-            className="text-xs font-medium text-blue-700 hover:underline"
+            className="text-xs font-medium text-brand-600 hover:text-brand-800 hover:underline"
           >
             {expanded ? 'Hide details' : 'View details'}
           </button>
         </td>
       </tr>
       {expanded && (
-        <tr className="border-b border-gray-100 bg-gray-50">
-          <td colSpan={6} className="px-3 py-3">
-            <div className="mb-2 flex flex-wrap gap-4 text-xs text-gray-600">
+        <tr className="bg-slate-50">
+          <td colSpan={6} className="px-4 py-4">
+            <div className="mb-2 flex flex-wrap gap-4 text-xs text-slate-600">
               <span>
-                <span className="font-medium text-gray-800">Document:</span>{' '}
+                <span className="font-medium text-slate-800">Document:</span>{' '}
                 {result.document_id ?? '—'}
               </span>
             </div>

@@ -17,28 +17,25 @@ export function UploadedFileCard({
   onReplace,
 }: UploadedFileCardProps) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-md border border-gray-200 bg-white px-4 py-3">
-      <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-gray-900" title={fileName}>
-          {fileName}
-        </p>
-        <p className="text-xs text-gray-500">
-          {formatFileSize(fileSize)} · {fileType || 'unknown type'}
-        </p>
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50/40 px-4 py-3">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+          <span aria-hidden="true">✓</span>
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-slate-900" title={fileName}>
+            {fileName}
+          </p>
+          <p className="text-xs text-slate-500">
+            {formatFileSize(fileSize)} · {fileType || 'unknown type'}
+          </p>
+        </div>
       </div>
       <div className="flex shrink-0 gap-2">
-        <Button
-          type="button"
-          onClick={onReplace}
-          className="bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-100"
-        >
+        <Button type="button" variant="secondary" size="sm" onClick={onReplace}>
           Replace
         </Button>
-        <Button
-          type="button"
-          onClick={onRemove}
-          className="bg-white px-2 py-1 text-xs text-red-700 hover:bg-red-50"
-        >
+        <Button type="button" variant="danger" size="sm" onClick={onRemove}>
           Remove
         </Button>
       </div>

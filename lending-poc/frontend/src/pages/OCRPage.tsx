@@ -27,8 +27,8 @@ function OCRPageContent() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-gray-900">OCR Result</h2>
-        <p className="mt-1 text-sm text-gray-600">
+        <h2 className="text-2xl font-semibold tracking-tight text-slate-900">OCR Result</h2>
+        <p className="mt-1.5 text-sm text-slate-600">
           Review the extracted content for each successfully processed document.
         </p>
       </div>
@@ -38,7 +38,7 @@ function OCRPageContent() {
           title="No OCR results available"
           message="No documents were successfully processed. Go back to processing to retry."
           action={
-            <Button type="button" onClick={() => navigate('/processing')}>
+            <Button type="button" variant="secondary" onClick={() => navigate('/processing')}>
               Back to Processing
             </Button>
           }
@@ -75,13 +75,13 @@ function OCRPageContent() {
         </div>
       )}
 
-      <div className="flex justify-end border-t border-gray-200 pt-6">
+      <div className="flex justify-end border-t border-slate-200 pt-6">
         <Button
           type="button"
           disabled={successfulDocs.length === 0}
           onClick={() => navigate('/translation')}
         >
-          Proceed to Translation
+          Proceed to Translation →
         </Button>
       </div>
     </div>

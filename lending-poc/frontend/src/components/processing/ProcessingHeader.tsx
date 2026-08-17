@@ -11,8 +11,8 @@ export function ProcessingHeader({
 }: ProcessingHeaderProps) {
   return (
     <div>
-      <h2 className="text-xl font-semibold text-gray-900">OCR Processing</h2>
-      <p className="mt-1 text-sm text-gray-600">
+      <h2 className="text-2xl font-semibold tracking-tight text-slate-900">OCR Processing</h2>
+      <p className="mt-1.5 text-sm text-slate-600">
         Extracting text from {totalCount} document{totalCount === 1 ? '' : 's'}. {completedCount}{' '}
         completed{failedCount > 0 ? `, ${failedCount} failed` : ''}.
       </p>

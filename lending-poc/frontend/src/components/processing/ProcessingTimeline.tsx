@@ -17,14 +17,16 @@ export function ProcessingTimeline({ activeStageIndex }: ProcessingTimelineProps
           <span
             className={
               index <= activeStageIndex
-                ? 'flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] text-white'
-                : 'flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 text-[10px] text-gray-500'
+                ? 'flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-[10px] font-semibold text-white'
+                : 'flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-500'
             }
             aria-hidden="true"
           >
             {index < activeStageIndex ? '✓' : index + 1}
           </span>
-          <span className={index <= activeStageIndex ? 'text-gray-900' : 'text-gray-400'}>
+          <span
+            className={index <= activeStageIndex ? 'font-medium text-slate-900' : 'text-slate-400'}
+          >
             {stage}
           </span>
         </li>

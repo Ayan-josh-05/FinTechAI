@@ -23,7 +23,7 @@ export function DocumentUploadCard({
 }: DocumentUploadCardProps) {
   return (
     <div>
-      <p className="mb-2 text-sm font-semibold text-gray-800">
+      <p className="mb-2 text-sm font-semibold text-slate-800">
         {label} <span className="text-red-500">*</span>
       </p>
       {document ? (

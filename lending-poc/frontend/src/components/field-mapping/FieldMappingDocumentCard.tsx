@@ -39,9 +39,9 @@ export function FieldMappingDocumentCard({
     entry?.status === 'error' && entry.error.message.toLowerCase().includes(NOT_CONFIGURED_HINT)
 
   return (
-    <div className="rounded-md border border-gray-200 bg-white p-4">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold text-gray-800">{docTypeLabel(docType)}</h3>
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-card">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold text-slate-800">{docTypeLabel(docType)}</h3>
         <div className="flex items-center gap-2">
           {status === 'PROCESSING' && <Spinner />}
           <StatusBadge status={status} />
@@ -49,14 +49,19 @@ export function FieldMappingDocumentCard({
       </div>
 
       <div className="mb-4">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
           Template (request payload)
         </p>
         <JsonViewer data={template} />
       </div>
 
       <div className="mb-4 flex justify-end">
-        <Button type="button" onClick={onGenerate} disabled={status === 'PROCESSING'}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={onGenerate}
+          disabled={status === 'PROCESSING'}
+        >
           {status === 'PENDING' && 'Generate'}
           {status === 'PROCESSING' && 'Generating…'}
           {status === 'FAILED' && 'Retry'}
@@ -68,8 +73,8 @@ export function FieldMappingDocumentCard({
         <div
           className={
             isNotConfigured
-              ? 'rounded-md border border-amber-200 bg-amber-50 p-3'
-              : 'rounded-md border border-red-200 bg-red-50 p-3'
+              ? 'rounded-lg border border-amber-200 bg-amber-50 p-3'
+              : 'rounded-lg border border-red-200 bg-red-50 p-3'
           }
         >
           <p className={isNotConfigured ? 'text-xs text-amber-800' : 'text-xs text-red-800'}>
@@ -82,7 +87,9 @@ export function FieldMappingDocumentCard({
 
       {status === 'COMPLETED' && entry?.status === 'success' && (
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Result</p>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Result
+          </p>
           <JsonViewer data={entry.data} />
         </div>
       )}

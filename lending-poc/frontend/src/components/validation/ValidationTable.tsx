@@ -7,29 +7,29 @@ interface ValidationTableProps {
 
 export function ValidationTable({ results }: ValidationTableProps) {
   return (
-    <div className="overflow-x-auto rounded-md border border-gray-200 bg-white">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+    <div className="overflow-hidden overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-card">
+      <table className="min-w-full divide-y divide-slate-200">
+        <thead className="bg-slate-50">
           <tr>
-            <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Attribute
             </th>
-            <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Source Value
             </th>
-            <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Target Value
             </th>
-            <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Confidence Score
             </th>
-            <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Status
             </th>
-            <th className="px-3 py-2" />
+            <th className="px-4 py-3" />
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-slate-100">
           {results.map((result, index) => (
             // check_type/document_id are not guaranteed unique across rows,
             // so the index is included to keep the composite key stable.

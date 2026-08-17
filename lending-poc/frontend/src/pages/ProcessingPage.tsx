@@ -60,15 +60,15 @@ function ProcessingPageContent() {
       />
 
       {allSettled && failedCount > 0 && (
-        <p className="text-sm text-amber-700">
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
           {failedCount} document{failedCount === 1 ? '' : 's'} failed to process. You can retry them
           above, or proceed with the documents that succeeded.
         </p>
       )}
 
-      <div className="flex justify-end border-t border-gray-200 pt-6">
+      <div className="flex justify-end border-t border-slate-200 pt-6">
         <Button type="button" disabled={!canProceed} onClick={() => navigate('/ocr')}>
-          View OCR Results
+          View OCR Results →
         </Button>
       </div>
     </div>

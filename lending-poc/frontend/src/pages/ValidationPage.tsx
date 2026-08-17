@@ -24,8 +24,8 @@ function ValidationPageContent() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-gray-900">Data Validation</h2>
-        <p className="mt-1 text-sm text-gray-600">
+        <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Data Validation</h2>
+        <p className="mt-1.5 text-sm text-slate-600">
           Cross-document validation results for this case.
         </p>
       </div>

@@ -15,7 +15,7 @@ export function TranslationCompareView({ original, translatedText }: Translation
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
           Original (OCR)
         </p>
         {original.extraction.html ? (
@@ -25,7 +25,7 @@ export function TranslationCompareView({ original, translatedText }: Translation
         )}
       </div>
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
           Translated
         </p>
         <HtmlDocumentViewer mode="text" text={translatedText} />

@@ -13,14 +13,14 @@ type HtmlDocumentViewerProps =
  */
 export function HtmlDocumentViewer(props: HtmlDocumentViewerProps) {
   const containerClass = cn(
-    'max-h-[32rem] overflow-auto rounded-md border border-gray-200 bg-white p-4 text-sm',
+    'max-h-[32rem] overflow-auto rounded-xl border border-slate-200 bg-white p-4 text-sm shadow-card',
     props.className
   )
 
   if (props.mode === 'text') {
     return (
       <div className={containerClass}>
-        <pre className="whitespace-pre-wrap break-words font-mono text-gray-800">{props.text}</pre>
+        <pre className="whitespace-pre-wrap break-words font-mono text-slate-800">{props.text}</pre>
       </div>
     )
   }

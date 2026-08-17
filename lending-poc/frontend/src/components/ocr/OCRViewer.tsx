@@ -18,7 +18,7 @@ export function OCRViewer({ extraction }: OCRViewerProps) {
   if (!extraction.html) {
     return (
       <div>
-        <p className="mb-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <p className="mb-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
           HTML preview not available for this document. Showing extracted text instead.
         </p>
         <HtmlDocumentViewer mode="text" text={extraction.text} />
@@ -29,11 +29,7 @@ export function OCRViewer({ extraction }: OCRViewerProps) {
   return (
     <div>
       <div className="mb-2 flex justify-end">
-        <Button
-          type="button"
-          onClick={() => setShowText((v) => !v)}
-          className="bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-100"
-        >
+        <Button type="button" variant="secondary" size="sm" onClick={() => setShowText((v) => !v)}>
           {showText ? 'View HTML' : 'View Text'}
         </Button>
       </div>

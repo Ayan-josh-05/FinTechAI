@@ -98,15 +98,15 @@ export default function UploadPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-xl font-semibold text-gray-900">Upload Documents</h2>
-        <p className="mt-1 text-sm text-gray-600">
+        <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Upload Documents</h2>
+        <p className="mt-1.5 text-sm text-slate-600">
           Upload all four required documents to begin verification. Nothing is sent to the server
           until you click Start Verification.
         </p>
       </div>
 
       {import.meta.env.DEV && (
-        <div className="flex items-center justify-between rounded-md border border-dashed border-amber-300 bg-amber-50 p-3">
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-dashed border-amber-300 bg-amber-50 p-4">
           <p className="text-xs text-amber-800">
             Dev only — seeds every workflow step with mock data so the UI can be reviewed without
             running backends. Remove before shipping.
@@ -114,7 +114,7 @@ export default function UploadPage() {
           <Button
             type="button"
             onClick={handleLoadMockData}
-            className="bg-amber-600 hover:bg-amber-700"
+            className="shrink-0 bg-amber-600 hover:bg-amber-700 focus-visible:ring-amber-500"
           >
             Load Mock Data
           </Button>
@@ -123,7 +123,7 @@ export default function UploadPage() {
 
       {groups.map((group) => (
         <div key={group}>
-          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
             {group}
           </h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -141,10 +141,10 @@ export default function UploadPage() {
         </div>
       ))}
 
-      <div className="flex items-center justify-between border-t border-gray-200 pt-6">
+      <div className="flex items-center justify-between border-t border-slate-200 pt-6">
         <UploadSummary documents={documentsByType} />
         <Button type="button" disabled={!allUploaded} onClick={handleProceed}>
-          Start Verification
+          Start Verification →
         </Button>
       </div>
     </div>

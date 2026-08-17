@@ -30,15 +30,20 @@ function FieldMappingPageContent() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-gray-900">Field Mapping</h2>
-        <p className="mt-1 text-sm text-gray-600">
+        <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Field Mapping</h2>
+        <p className="mt-1.5 text-sm text-slate-600">
           Each document has its own field-mapping template. Generate all at once, or generate a
           single document individually.
         </p>
       </div>
 
       <div className="flex justify-end">
-        <Button type="button" onClick={startAll} disabled={isRunning || eligibleDocs.length === 0}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={startAll}
+          disabled={isRunning || eligibleDocs.length === 0}
+        >
           {isRunning ? 'Generating…' : 'Generate All'}
         </Button>
       </div>
@@ -54,9 +59,9 @@ function FieldMappingPageContent() {
         ))}
       </div>
 
-      <div className="flex justify-end border-t border-gray-200 pt-6">
+      <div className="flex justify-end border-t border-slate-200 pt-6">
         <Button type="button" disabled={!canProceed} onClick={() => navigate('/validation')}>
-          Proceed to Data Validation
+          Proceed to Data Validation →
         </Button>
       </div>
     </div>

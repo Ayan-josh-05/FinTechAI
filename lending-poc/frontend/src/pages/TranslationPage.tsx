@@ -58,8 +58,8 @@ function TranslationPageContent() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-gray-900">Translation</h2>
-        <p className="mt-1 text-sm text-gray-600">
+        <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Translation</h2>
+        <p className="mt-1.5 text-sm text-slate-600">
           Translating the extracted text for each document (banking domain).
         </p>
       </div>
@@ -98,9 +98,9 @@ function TranslationPageContent() {
         </div>
       )}
 
-      <div className="flex justify-end border-t border-gray-200 pt-6">
+      <div className="flex justify-end border-t border-slate-200 pt-6">
         <Button type="button" disabled={!canProceed} onClick={() => navigate('/field-mapping')}>
-          Proceed to Field Mapping
+          Proceed to Field Mapping →
         </Button>
       </div>
     </div>
