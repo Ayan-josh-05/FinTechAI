@@ -23,8 +23,10 @@ TXN_SELECTION_MIN_SCORE = 60.0
 # reimbursement/bonus/advance with a coincidentally close amount from
 # masking a genuinely missing salary credit -- the gate is on the amount
 # itself, not on narration keywords (which don't generalize across
-# employers/languages/formats).
-SALARY_AMOUNT_TOLERANCE_PCT = 3.0
+# employers/languages/formats). 5% leaves enough room for rounding/rate
+# differences across payslip and bank narration formats without letting
+# unrelated credits slip in.
+SALARY_AMOUNT_TOLERANCE_PCT = 5.0
 
 VALIDATION_WEIGHTS = {
     "NAME": 0.15,

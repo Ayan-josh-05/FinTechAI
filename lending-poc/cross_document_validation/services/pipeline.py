@@ -15,7 +15,7 @@ def run_pipeline(case: CaseInput) -> PipelineResult:
     present = case.present_doc_types()
     missing = set(cfg.REQUIRED_DOCUMENT_TYPES) - present
     if missing:
-        reasons = [f"MISSING_DOCUMENT:{doc_type}" for doc_type in sorted(missing)]
+        reasons = [f"Required document missing: {doc_type.replace('_', ' ').title()}." for doc_type in sorted(missing)]
         audit_log.append(f"PIPELINE: precheck_failed missing={sorted(missing)}")
         decision_result = DecisionResult(decision=Decision.FAIL, reasons=reasons, overall_score=0.0)
         return PipelineResult(

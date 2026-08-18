@@ -1,6 +1,12 @@
 """Checks employer + salary consistency between salary slips and the bank
 statement. No specific payroll day is assumed anywhere: each slip is
 matched against bank transactions inside a broad, month-level window.
+
+When only a single salary slip is provided, its declared salary_month is
+not trusted as the sole window -- instead it is validated as recurring
+income against every calendar month covered by the bank statement, since
+one slip alone is too little evidence to anchor on a single declared
+month.
 """
 
 from calendar import monthrange
@@ -33,6 +39,26 @@ def _month_window(salary_month: date) -> tuple[date, date]:
     last_day = monthrange(window_end_month.year, window_end_month.month)[1]
     window_end = date(window_end_month.year, window_end_month.month, last_day)
     return window_start, window_end
+
+
+def _calendar_months_in_span(transactions: list[BankTransaction]) -> list[date]:
+    """Every calendar month (as its first-of-month date) from the earliest
+    to the latest transaction date in the statement, inclusive -- including
+    months with zero transactions, since a gap in credits is exactly what a
+    single-slip recurring-income check needs to catch.
+    """
+    dates = [txn.txn_date for txn in transactions if txn.txn_date is not None]
+    if not dates:
+        return []
+    start = date(min(dates).year, min(dates).month, 1)
+    end = date(max(dates).year, max(dates).month, 1)
+
+    months = []
+    current = start
+    while current <= end:
+        months.append(current)
+        current = _add_months(current, 1)
+    return months
 
 
 def _within_amount_tolerance(amount: float, expected: float) -> bool:
@@ -159,6 +185,60 @@ def _validate_salary_slip(
     )
 
 
+def _validate_single_slip_against_month(
+    slip: SalarySlipDoc, month: date, bank_statement: BankStatementDoc, used_transaction_ids: set[int]
+) -> ValidationResult:
+    """Matches the one available slip against a single calendar month of
+    the bank statement, independent of the slip's own declared salary_month.
+
+    Each month is checked as its own recurring-income claim rather than a
+    date match against a specific declared month, so months are not mutually
+    exclusive the way overlapping multi-slip windows are: the same slip
+    amount is expected to recur every month, not be claimed once.
+    """
+    window = (
+        month - timedelta(days=cfg.SALARY_CREDIT_BUFFER_DAYS),
+        date(month.year, month.month, monthrange(month.year, month.month)[1]),
+    )
+    candidates = [
+        txn
+        for txn in _candidate_transactions(window, bank_statement.transactions, slip.net_salary)
+        if id(txn) not in used_transaction_ids
+    ]
+    selection = _select_best_transaction(candidates, slip.employer_name, slip.net_salary)
+
+    month_label = month.strftime("%B %Y")
+    if selection is None:
+        return ValidationResult(
+            check_type=CheckType.SALARY_DATE,
+            passed=False,
+            score=0.0,
+            document_id=slip.doc_id,
+            failure_reason="no_matching_credit_in_month",
+            evidence={
+                "source_text": month_label,
+                "target_text": None,
+                "match_type": "DATE_MATCH",
+                "window": window,
+            },
+        )
+
+    txn, score = selection
+    used_transaction_ids.add(id(txn))
+    return ValidationResult(
+        check_type=CheckType.SALARY_DATE,
+        passed=True,
+        score=score,
+        document_id=slip.doc_id,
+        evidence={
+            "source_text": month_label,
+            "target_text": txn.txn_date.strftime("%Y-%m") if txn.txn_date else None,
+            "match_type": "DATE_MATCH",
+            "matched_transaction": txn,
+        },
+    )
+
+
 def _employer_match_for_slip(
     slip: SalarySlipDoc, slip_result: ValidationResult
 ) -> ValidationResult:
@@ -206,11 +286,10 @@ def _employer_match_for_slip(
 
 
 def _salary_credit_count(
-    salary_slips: list[SalarySlipDoc],
     bank_statement: BankStatementDoc,
     slip_results: list[ValidationResult],
 ) -> ValidationResult:
-    total_slips = len(salary_slips)
+    total_slips = len(slip_results)
     matched_slips = sum(1 for r in slip_results if r.passed)
     confidence_score = (matched_slips / total_slips * 100.0) if total_slips else 0.0
 
@@ -233,28 +312,56 @@ def _salary_credit_count(
     )
 
 
-def run_business_validation(case: CaseInput) -> list[ValidationResult]:
-    results: list[ValidationResult] = []
-
-    if not case.salary_slips or not case.bank_statement:
-        return results
-
+def _run_single_slip_validation(
+    slip: SalarySlipDoc, bank_statement: BankStatementDoc
+) -> list[ValidationResult]:
+    """With only one slip as evidence, its declared salary_month is too
+    thin a basis to anchor a single date-window match on. Instead the slip
+    is treated as a recurring-income claim and checked against every
+    calendar month the bank statement covers.
+    """
+    months = _calendar_months_in_span(bank_statement.transactions)
     used_transaction_ids: set[int] = set()
-    ordered_slips = sorted(
-        case.salary_slips, key=lambda slip: slip.salary_month or date.max
-    )
+
+    month_results = [
+        _validate_single_slip_against_month(slip, month, bank_statement, used_transaction_ids)
+        for month in months
+    ]
+
+    results: list[ValidationResult] = list(month_results)
+    for month_result in month_results:
+        results.append(_employer_match_for_slip(slip, month_result))
+
+    results.append(_salary_credit_count(bank_statement, month_results))
+    return results
+
+
+def _run_multi_slip_validation(
+    salary_slips: list[SalarySlipDoc], bank_statement: BankStatementDoc
+) -> list[ValidationResult]:
+    used_transaction_ids: set[int] = set()
+    ordered_slips = sorted(salary_slips, key=lambda slip: slip.salary_month or date.max)
     slip_results_by_doc_id = {
-        slip.doc_id: _validate_salary_slip(slip, case.bank_statement, used_transaction_ids)
+        slip.doc_id: _validate_salary_slip(slip, bank_statement, used_transaction_ids)
         for slip in ordered_slips
     }
     # Preserve the original slip order in the output, independent of the
     # chronological order used to resolve which slip claims which credit.
-    slip_results = [slip_results_by_doc_id[slip.doc_id] for slip in case.salary_slips]
-    results.extend(slip_results)
+    slip_results = [slip_results_by_doc_id[slip.doc_id] for slip in salary_slips]
 
-    for slip in case.salary_slips:
+    results: list[ValidationResult] = list(slip_results)
+    for slip in salary_slips:
         results.append(_employer_match_for_slip(slip, slip_results_by_doc_id[slip.doc_id]))
 
-    results.append(_salary_credit_count(case.salary_slips, case.bank_statement, slip_results))
-
+    results.append(_salary_credit_count(bank_statement, slip_results))
     return results
+
+
+def run_business_validation(case: CaseInput) -> list[ValidationResult]:
+    if not case.salary_slips or not case.bank_statement:
+        return []
+
+    if len(case.salary_slips) == 1:
+        return _run_single_slip_validation(case.salary_slips[0], case.bank_statement)
+
+    return _run_multi_slip_validation(case.salary_slips, case.bank_statement)
