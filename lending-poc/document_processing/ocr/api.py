@@ -12,12 +12,14 @@ Endpoints:
     GET /health   - Health check endpoint
 """
 
+import asyncio
 import tempfile
 from pathlib import Path
 from typing import Any, Dict
 import os
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.concurrency import run_in_threadpool
 import uvicorn
 
 from extractor import Extractor, DEFAULT_ENGINE
@@ -35,6 +37,10 @@ extractor = Extractor(engine=DEFAULT_ENGINE)
 
 # File size limit (50MB)
 MAX_FILE_SIZE = 50 * 1024 * 1024
+
+# The Surya engine crashes (segfault) if invoked from more than one thread at
+# once, so concurrent /extract calls must queue rather than run in parallel.
+_extract_lock = asyncio.Lock()
 
 @app.get("/health")
 async def health_check() -> Dict[str, str]:
@@ -67,7 +73,7 @@ async def extract_text(file: UploadFile = File(...)) -> Dict[str, Any]:
         )
     
     # Check file size
-content = await file.read(MAX_FILE_SIZE + 1)
+    content = await file.read(MAX_FILE_SIZE + 1)
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=413, 
@@ -89,8 +95,11 @@ content = await file.read(MAX_FILE_SIZE + 1)
             temp_file.write(content)
             temp_file_path = temp_file.name
         
-        # Extract text using existing pipeline
-        result = extractor.process_document(temp_file_path)
+        # Runs in a worker thread (so this blocking call doesn't freeze the
+        # event loop for other requests) but serialized via a lock (so two
+        # extractions never actually run at the same time, which segfaults).
+        async with _extract_lock:
+            result = await run_in_threadpool(extractor.process_document, temp_file_path)
         
         # Prepare response
         response_data = {
@@ -99,7 +108,7 @@ content = await file.read(MAX_FILE_SIZE + 1)
             "pages_processed": len(result.json_data.get("pages", [])),
             "extraction": {
                 "text": result.text,
-                # "html": result.html,
+                "html": result.html,
                 # "structured_data": result.json_data
             },
             "metadata": {

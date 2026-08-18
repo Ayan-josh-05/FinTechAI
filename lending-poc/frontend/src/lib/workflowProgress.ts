@@ -12,28 +12,26 @@ export function getMaxReachedIndex(state: AppStoreState): number {
   const hasUploads = state.uploadedDocuments.length > 0
   if (!hasUploads) return 0 // upload
 
-  const ocrEntries = Object.values(state.ocrResults)
-  const hasAnyOcrAttempt = ocrEntries.length > 0
-  if (!hasAnyOcrAttempt) return 1 // processing
+  // Each branch below caps progress at the step whose own success condition
+  // is still unmet — whether that's because it hasn't been attempted yet or
+  // because every attempt so far has failed. Landing on that step is what
+  // triggers the attempt (translation and validation auto-run on mount;
+  // field-mapping is manually triggered from that same page), so the cap
+  // must allow reaching the step itself, not stop one step short of it.
+  const hasAnyOcrSuccess = Object.values(state.ocrResults).some((e) => e.status === 'success')
+  if (!hasAnyOcrSuccess) return 1 // processing (auto-runs OCR)
 
-  const hasAnyOcrSuccess = ocrEntries.some((e) => e.status === 'success')
-  if (!hasAnyOcrSuccess) return 1 // processing (all failed so far)
+  const hasAnyTranslationSuccess = Object.values(state.translationResults).some(
+    (e) => e.status === 'success'
+  )
+  if (!hasAnyTranslationSuccess) return 3 // translation (auto-runs on mount)
 
-  const translationEntries = Object.values(state.translationResults)
-  const hasAnyTranslationAttempt = translationEntries.length > 0
-  if (!hasAnyTranslationAttempt) return 2 // ocr
+  const hasAnyFieldMappingSuccess = Object.values(state.fieldMappingResults).some(
+    (e) => e.status === 'success'
+  )
+  if (!hasAnyFieldMappingSuccess) return 4 // field-mapping (manual "Generate")
 
-  const hasAnyTranslationSuccess = translationEntries.some((e) => e.status === 'success')
-  if (!hasAnyTranslationSuccess) return 2 // ocr
+  if (!state.validationResult) return 5 // validation (auto-runs on mount)
 
-  const fieldMappingEntries = Object.values(state.fieldMappingResults)
-  const hasAnyFieldMappingAttempt = fieldMappingEntries.length > 0
-  if (!hasAnyFieldMappingAttempt) return 3 // translation
-
-  const hasAnyFieldMappingSuccess = fieldMappingEntries.some((e) => e.status === 'success')
-  if (!hasAnyFieldMappingSuccess) return 3 // translation
-
-  if (!state.validationResult) return 4 // field-mapping
-
-  return 5 // validation
+  return 5
 }

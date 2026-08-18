@@ -20,8 +20,11 @@ apiClient.interceptors.response.use(
 )
 
 /**
- * Separate client for the translation microservice, which lives on its own
- * host:port (VITE_TRANSLATION_API_BASE_URL), distinct from the main API.
+ * Separate client for the translation microservice. As of the single-gateway
+ * backend, VITE_TRANSLATION_API_BASE_URL points at the same gateway as
+ * VITE_API_BASE_URL (which now fronts OCR, translation, and field-mapping
+ * behind one port) — kept as its own client/env var in case translation is
+ * ever split back onto its own host:port.
  */
 export const translationApiClient = axios.create({
   baseURL: env.VITE_TRANSLATION_API_BASE_URL,
