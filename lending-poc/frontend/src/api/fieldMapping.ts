@@ -12,6 +12,10 @@ export interface MapFieldsInput {
   template: FieldMappingTemplateEntry | unknown
 }
 
+// The backend calls out to a local LLM (Ollama) per request, which can run
+// well past the client's default 30s timeout under load or for longer text.
+const MAP_FIELDS_TIMEOUT_MS = 5 * 60 * 1000
+
 /**
  * Calls the field-mapping API for a single document. The backend
  * (field_mapping_poc/api.py) accepts { ocr_text, json_format } — json_format
@@ -20,10 +24,14 @@ export interface MapFieldsInput {
  * OCR and translation each run per document.
  */
 export async function mapFields(input: MapFieldsInput): Promise<FieldMappingResult> {
-  const response = await apiClient.post('/map', {
-    ocr_text: input.text,
-    json_format: JSON.stringify(input.template),
-  })
+  const response = await apiClient.post(
+    '/map',
+    {
+      ocr_text: input.text,
+      json_format: JSON.stringify(input.template),
+    },
+    { timeout: MAP_FIELDS_TIMEOUT_MS }
+  )
 
   return fieldMappingResultSchema.parse(response.data)
 }

@@ -1,12 +1,15 @@
 import { useCallback, useState } from 'react'
-import { extractDocuments } from '@/api/extract'
+import { extractOne } from '@/api/extract'
 import { useAppStore, type UploadedDocument } from '@/store/useAppStore'
 import { toAppError } from '@/lib/errors'
 
 /**
  * Drives OCR extraction for the uploaded documents. Populates per-document
- * entries in the store (ocrResults keyed by document id) so a single
- * failure never hides the others. Exposes a retry for a single document.
+ * entries in the store (ocrResults keyed by document id) as each document's
+ * own request settles — independently of how long the others take — so a
+ * single failure never hides the others, and finished documents show up
+ * immediately instead of waiting for the whole batch. Exposes a retry for a
+ * single document.
  */
 export function useOCR() {
   const uploadedDocuments = useAppStore((s) => s.uploadedDocuments)
@@ -14,25 +17,29 @@ export function useOCR() {
   const setOcrEntry = useAppStore((s) => s.setOcrEntry)
   const [isRunning, setIsRunning] = useState(false)
 
+  const extractDoc = useCallback(
+    async (doc: UploadedDocument) => {
+      try {
+        const data = await extractOne(doc.file)
+        setOcrEntry(doc.id, { status: 'success', data })
+      } catch (error) {
+        setOcrEntry(doc.id, { status: 'error', error: toAppError(error) })
+      }
+    },
+    [setOcrEntry]
+  )
+
   const runExtraction = useCallback(
     async (docs: UploadedDocument[]) => {
       if (docs.length === 0) return
       setIsRunning(true)
       docs.forEach((doc) => setOcrEntry(doc.id, { status: 'processing' }))
 
-      const results = await extractDocuments(docs.map((d) => d.file))
+      await Promise.allSettled(docs.map((doc) => extractDoc(doc)))
 
-      results.forEach((result, index) => {
-        const doc = docs[index]
-        if (result.status === 'fulfilled') {
-          setOcrEntry(doc.id, { status: 'success', data: result.data })
-        } else {
-          setOcrEntry(doc.id, { status: 'error', error: result.error })
-        }
-      })
       setIsRunning(false)
     },
-    [setOcrEntry]
+    [setOcrEntry, extractDoc]
   )
 
   const startAll = useCallback(() => {
@@ -44,19 +51,9 @@ export function useOCR() {
       const doc = uploadedDocuments.find((d) => d.id === documentId)
       if (!doc) return
       setOcrEntry(doc.id, { status: 'processing' })
-      try {
-        const results = await extractDocuments([doc.file])
-        const result = results[0]
-        if (result.status === 'fulfilled') {
-          setOcrEntry(doc.id, { status: 'success', data: result.data })
-        } else {
-          setOcrEntry(doc.id, { status: 'error', error: result.error })
-        }
-      } catch (error) {
-        setOcrEntry(doc.id, { status: 'error', error: toAppError(error) })
-      }
+      await extractDoc(doc)
     },
-    [uploadedDocuments, setOcrEntry]
+    [uploadedDocuments, setOcrEntry, extractDoc]
   )
 
   return { uploadedDocuments, ocrResults, isRunning, startAll, retryOne }

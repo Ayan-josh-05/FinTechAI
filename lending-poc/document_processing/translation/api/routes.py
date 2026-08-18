@@ -14,7 +14,10 @@ POST /translate/files
     Files are processed sequentially; a failure on one does not abort the others.
 """
 
+import asyncio
+
 from fastapi import APIRouter, HTTPException, UploadFile, File, Query, Request, status
+from fastapi.concurrency import run_in_threadpool
 
 from .models import (
     TextTranslateRequest,
@@ -28,6 +31,12 @@ from translation_service.config import SUPPORTED_DOMAINS, DEFAULT_DOMAIN, MODEL_
 from translation_service.kb.retriever import retrieve
 
 router = APIRouter()
+
+# service.translate() makes a blocking call to the local Ollama model, which
+# (per this module's own README) only serves one request at a time. Run it
+# in a worker thread so it doesn't freeze the event loop for other requests
+# (e.g. /health), and serialize access via a lock to match that constraint.
+_translate_lock = asyncio.Lock()
 
 
 def _get_service(request: Request, domain: str):
@@ -97,8 +106,9 @@ async def translate_text(body: TextTranslateRequest, request: Request):
     """
     service = _get_service(request, body.domain)
     try:
-        matches     = retrieve(body.text, service._kb)
-        translation = service.translate(body.text)
+        matches = retrieve(body.text, service._kb)
+        async with _translate_lock:
+            translation = await run_in_threadpool(service.translate, body.text)
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -160,10 +170,11 @@ async def translate_files(
     for upload in files:
         filename = upload.filename or "unknown"
         try:
-            raw_bytes   = await upload.read()
-            text        = raw_bytes.decode("utf-8")
-            matches     = retrieve(text, service._kb)
-            translation = service.translate(text)
+            raw_bytes = await upload.read()
+            text      = raw_bytes.decode("utf-8")
+            matches   = retrieve(text, service._kb)
+            async with _translate_lock:
+                translation = await run_in_threadpool(service.translate, text)
 
             results.append(TranslationResult(
                 source=filename,

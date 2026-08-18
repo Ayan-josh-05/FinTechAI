@@ -12,11 +12,13 @@ Endpoints:
     GET /health   - Health check endpoint
 """
 
+import asyncio
 import json
 import logging
 from typing import Any, Dict
 
 from fastapi import FastAPI, HTTPException
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 import uvicorn
 
@@ -33,6 +35,11 @@ app = FastAPI(
 
 # Initialize field mapper (reused across requests for efficiency)
 mapper = FieldMapper()
+
+# The local Ollama model serves one generation at a time anyway; serialize
+# calls through the shared client rather than letting them race across
+# threads.
+_map_lock = asyncio.Lock()
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +76,11 @@ async def map_fields(request: MapRequest) -> Dict[str, Any]:
         )
     
     try:
-        result = mapper.map_fields(schema, request.ocr_text)
+        # Runs in a worker thread so this synchronous LLM call doesn't block
+        # the event loop, serialized since the local model only serves one
+        # generation at a time anyway.
+        async with _map_lock:
+            result = await run_in_threadpool(mapper.map_fields, schema, request.ocr_text)
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
