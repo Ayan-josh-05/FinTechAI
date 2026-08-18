@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useAppStore } from '@/store/useAppStore'
@@ -11,20 +11,34 @@ import { Button } from '@/components/common/Button'
 
 function TranslationPageContent() {
   const navigate = useNavigate()
-  const { uploadedDocuments, translationResults, isRunning, startAll, retryOne } = useTranslation()
+  const { uploadedDocuments, translationResults, isRunning, startAll, retryOne, skipAll } =
+    useTranslation()
   const ocrResults = useAppStore((s) => s.ocrResults)
   const setCurrentStep = useAppStore((s) => s.setCurrentStep)
 
   const eligibleDocs = uploadedDocuments.filter((doc) => ocrResults[doc.id]?.status === 'success')
+  // Guards against React StrictMode's dev-only double-invoke of mount
+  // effects: both invocations share the same closure-captured
+  // translationResults (empty, since neither has resolved yet), so a check
+  // like `hasAnyAttempt` alone would pass both times and fire startAll()
+  // twice — two overlapping batches racing each other. A ref survives the
+  // double-invoke, so it reliably fires once.
+  const hasStartedRef = useRef(false)
 
   useEffect(() => {
     setCurrentStep('translation')
     const hasAnyAttempt = eligibleDocs.some((doc) => translationResults[doc.id])
-    if (!hasAnyAttempt && eligibleDocs.length > 0) {
+    if (!hasAnyAttempt && eligibleDocs.length > 0 && !hasStartedRef.current) {
+      hasStartedRef.current = true
       startAll()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount only
   }, [])
+
+  const handleSkip = () => {
+    skipAll()
+    navigate('/field-mapping')
+  }
 
   const successfulDocs = eligibleDocs.filter(
     (doc) => translationResults[doc.id]?.status === 'success'
@@ -98,7 +112,15 @@ function TranslationPageContent() {
         </div>
       )}
 
-      <div className="flex justify-end border-t border-slate-200 pt-6">
+      <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-6">
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={eligibleDocs.length === 0 || isRunning}
+          onClick={handleSkip}
+        >
+          Skip Translation (documents are already English) →
+        </Button>
         <Button type="button" disabled={!canProceed} onClick={() => navigate('/field-mapping')}>
           Proceed to Field Mapping →
         </Button>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useOCR } from '@/hooks/useOCR'
 import { useAppStore } from '@/store/useAppStore'
@@ -11,12 +11,21 @@ function ProcessingPageContent() {
   const navigate = useNavigate()
   const { uploadedDocuments, ocrResults, isRunning, startAll, retryOne } = useOCR()
   const setCurrentStep = useAppStore((s) => s.setCurrentStep)
+  // Guards against React StrictMode's dev-only double-invoke of mount
+  // effects: both invocations share the same closure-captured ocrResults
+  // (empty, since neither has resolved yet), so a check like
+  // `hasAnyAttempt` alone would pass both times and fire startAll() twice
+  // — two overlapping batches racing each other, each internally
+  // sequential but not against one another. A ref survives the
+  // double-invoke, so it reliably fires once.
+  const hasStartedRef = useRef(false)
 
   useEffect(() => {
     setCurrentStep('processing')
     // Kick off extraction once, on mount, if nothing has been attempted yet.
     const hasAnyAttempt = uploadedDocuments.some((doc) => ocrResults[doc.id])
-    if (!hasAnyAttempt) {
+    if (!hasAnyAttempt && !hasStartedRef.current) {
+      hasStartedRef.current = true
       startAll()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount only

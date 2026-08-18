@@ -37,15 +37,28 @@ export function useFieldMapping() {
     [translationResults, setFieldMappingEntry]
   )
 
+  const runMapping = useCallback(
+    async (docs: UploadedDocument[]) => {
+      if (docs.length === 0) return
+      setIsRunning(true)
+      // The backend serializes field-mapping requests (the local model only
+      // handles one generation at a time), so sending them one at a time
+      // avoids every request's timeout clock starting at once and piling
+      // up behind the same queue.
+      for (const doc of docs) {
+        await mapOne(doc)
+      }
+      setIsRunning(false)
+    },
+    [mapOne]
+  )
+
   const startAll = useCallback(() => {
-    setIsRunning(true)
     const eligible = uploadedDocuments.filter(
       (doc) => translationResults[doc.id]?.status === 'success'
     )
-    Promise.allSettled(eligible.map((doc) => mapOne(doc))).finally(() => {
-      setIsRunning(false)
-    })
-  }, [uploadedDocuments, translationResults, mapOne])
+    void runMapping(eligible)
+  }, [runMapping, uploadedDocuments, translationResults])
 
   const retryOne = useCallback(
     (documentId: string) => {

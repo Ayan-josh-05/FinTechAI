@@ -31,13 +31,26 @@ export function useTranslation() {
     [ocrResults, setTranslationEntry]
   )
 
-  const startAll = useCallback(() => {
-    setIsRunning(true)
-    const eligible = uploadedDocuments.filter((doc) => ocrResults[doc.id]?.status === 'success')
-    Promise.allSettled(eligible.map((doc) => translateOne(doc))).finally(() => {
+  const runTranslation = useCallback(
+    async (docs: UploadedDocument[]) => {
+      if (docs.length === 0) return
+      setIsRunning(true)
+      // The backend serializes translation requests (the local model only
+      // handles one generation at a time), so sending them one at a time
+      // avoids every request's timeout clock starting at once and piling
+      // up behind the same queue.
+      for (const doc of docs) {
+        await translateOne(doc)
+      }
       setIsRunning(false)
-    })
-  }, [uploadedDocuments, ocrResults, translateOne])
+    },
+    [translateOne]
+  )
+
+  const startAll = useCallback(() => {
+    const eligible = uploadedDocuments.filter((doc) => ocrResults[doc.id]?.status === 'success')
+    void runTranslation(eligible)
+  }, [runTranslation, uploadedDocuments, ocrResults])
 
   const retryOne = useCallback(
     (documentId: string) => {
@@ -48,5 +61,28 @@ export function useTranslation() {
     [uploadedDocuments, translateOne]
   )
 
-  return { uploadedDocuments, translationResults, isRunning, startAll, retryOne }
+  /**
+   * Skips translation for all eligible documents, carrying the OCR text
+   * through unchanged as the "translation" (for already-English documents,
+   * where a real translation call would be a no-op). Field mapping reads
+   * translationResults[id].data.translation, so this keeps the rest of the
+   * pipeline working without any changes downstream.
+   */
+  const skipAll = useCallback(() => {
+    uploadedDocuments.forEach((doc) => {
+      const ocrEntry = ocrResults[doc.id]
+      if (!ocrEntry || ocrEntry.status !== 'success') return
+      setTranslationEntry(doc.id, {
+        status: 'success',
+        data: {
+          source: 'skipped',
+          domain: 'banking',
+          translation: ocrEntry.data.extraction.text,
+          kb_matches: 0,
+        },
+      })
+    })
+  }, [uploadedDocuments, ocrResults, setTranslationEntry])
+
+  return { uploadedDocuments, translationResults, isRunning, startAll, retryOne, skipAll }
 }

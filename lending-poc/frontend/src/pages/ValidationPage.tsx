@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useValidation } from '@/hooks/useValidation'
 import { useAppStore } from '@/store/useAppStore'
 import { RequireStep } from '@/components/layout/RequireStep'
@@ -12,10 +12,15 @@ import { Button } from '@/components/common/Button'
 function ValidationPageContent() {
   const setCurrentStep = useAppStore((s) => s.setCurrentStep)
   const { validationResult, isLoading, error, submit, retry } = useValidation()
+  // Guards against React StrictMode's dev-only double-invoke of mount
+  // effects, which would otherwise double-submit the case (see the same
+  // fix in ProcessingPage/TranslationPage for the full explanation).
+  const hasStartedRef = useRef(false)
 
   useEffect(() => {
     setCurrentStep('validation')
-    if (!validationResult) {
+    if (!validationResult && !hasStartedRef.current) {
+      hasStartedRef.current = true
       void submit()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount only
