@@ -121,13 +121,13 @@ Document primary keys are resolved via an in-memory `doc_id -> Document.id` map 
 
 ## 8. Supported document types
 
-| `doc_type` | Purpose |
+| `document_type` | Purpose |
 |---|---|
-| `AADHAAR` | Primary identity source (name, address, DOB, Aadhaar number) |
-| `PAN` | Secondary identity source (name, PAN number) |
-| `ADDRESS_PROOF` | Address fallback if Aadhaar has none |
-| `SALARY_SLIP` | Declared income; multiple allowed per case (one per month) |
-| `BANK_STATEMENT` | Source of truth for actual salary credits |
+| `aadhaar` | Primary identity source (name, address, DOB, Aadhaar number) |
+| `pan` | Secondary identity source (name, PAN number) |
+| `address_proof` | Address fallback if Aadhaar has none |
+| `salary_slip` | Declared income; multiple allowed per case (one per month) |
+| `bank_statement` | Source of truth for actual salary credits; multiple allowed per case, transactions are merged |
 
 ## 9. Configuration reference (`cross_document_validation/services/validation_config.py`)
 

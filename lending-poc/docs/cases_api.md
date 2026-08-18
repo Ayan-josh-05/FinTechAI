@@ -15,54 +15,43 @@ Adds the `POST /cases` endpoint, the first user-facing entry point into the lend
   "applicant_ref": "APP-2026-00134",
   "documents": [
     {
-      "doc_type": "AADHAAR",
-      "extracted_fields": {
-        "name": "Sneha Sunil Lokhande",
-        "address": "Flat 204, Green Heights, Baner, Pune, Maharashtra 411045",
-        "aadhaar_number": "XXXX XXXX 4321",
-        "date_of_birth": "1995-03-14"
-      },
-      "source_file_ref": "s3://kyc-docs/APP-2026-00123/aadhaar_front.pdf"
+      "document_type": "aadhaar",
+      "name": "Sneha Sunil Lokhande",
+      "address": "Flat 204, Green Heights, Baner, Pune, Maharashtra 411045",
+      "aadhaar_number": "XXXX XXXX 4321",
+      "date_of_birth": "14/03/1995"
     },
     {
-      "doc_type": "PAN",
-      "extracted_fields": {
-        "name": "Sneha Lokhande",
-        "pan_number": "ABCDE1234F"
-      },
-      "source_file_ref": "s3://kyc-docs/APP-2026-00123/pan_card.pdf"
+      "document_type": "pan",
+      "name": "Sneha Lokhande",
+      "pan_number": "ABCDE1234F"
     },
     {
-      "doc_type": "ADDRESS_PROOF",
-      "extracted_fields": {
-        "address": "Apartment 204, Green Heights, Baner, Pune, MH 411045"
-      },
-      "source_file_ref": "s3://kyc-docs/APP-2026-00123/address_proof.pdf"
+      "document_type": "address_proof",
+      "address": "Apartment 204, Green Heights, Baner, Pune, MH 411045"
     },
     {
-      "doc_type": "SALARY_SLIP",
-      "salary_slips": [
-        {
-          "extracted_fields": {
-            "name": "Sneha Sunil Lokhande",
-            "employer_name": "ABC Technologies Pvt Ltd",
-            "net_salary": 75000,
-            "salary_month": "2026-03"
-          },
-          "source_file_ref": "s3://kyc-docs/APP-2026-00123/salary_slip_march.pdf"
-        }
+      "document_type": "salary_slip",
+      "document_metadata": {
+        "document_date": "31-03-2026",
+        "period": { "from": "01-03-2026", "to": "31-03-2026" },
+        "currency": "INR"
+      },
+      "employer": { "name": "ABC Technologies Pvt Ltd" },
+      "employee": { "name": "Sneha Sunil Lokhande" },
+      "net_salary": { "amount": "75,000.00", "currency": "INR" }
+    },
+    {
+      "document_type": "bank_statement",
+      "document_metadata": {
+        "statement_period": { "from": "01-04-2026", "to": "31-07-2026" },
+        "currency": "INR"
+      },
+      "account": { "account_holder_name": "Lokhande S. S." },
+      "transactions": [
+        { "transaction_date": "01.04.2026", "description": "ABC TECHNOLOGIES SALARY MAR", "amount": 75000, "direction": "Credited" },
+        { "transaction_date": "03.04.2026", "description": "HOUSE RENT EMI DEBIT", "amount": 18000, "direction": "Debited" }
       ]
-    },
-    {
-      "doc_type": "BANK_STATEMENT",
-      "extracted_fields": {
-        "name": "Lokhande S. S.",
-        "transactions": [
-          { "narration": "ABC TECHNOLOGIES SALARY MAR", "amount": 75000, "date": "2026-04-01" },
-          { "narration": "HOUSE RENT EMI DEBIT", "amount": -18000, "date": "2026-04-03" }
-        ]
-      },
-      "source_file_ref": "s3://kyc-docs/APP-2026-00123/bank_statement_mar_to_jul.pdf"
     }
   ]
 }
@@ -70,9 +59,11 @@ Adds the `POST /cases` endpoint, the first user-facing entry point into the lend
 
 Notes:
 - `applicant_ref` and `documents` are required.
-- Every document needs `doc_type` and `extracted_fields`; `source_file_ref` is optional.
-- `SALARY_SLIP` is the only `doc_type` that carries a `salary_slips` array instead of a flat `extracted_fields` — a case can include multiple salary slips (one per month).
-- Required document types for a case to proceed: `AADHAAR`, `PAN`, `SALARY_SLIP`, `BANK_STATEMENT`. `ADDRESS_PROOF` is optional (used as an address fallback).
+- Every document needs a `document_type` (lowercase: `aadhaar`, `pan`, `address_proof`, `salary_slip`, `bank_statement`); its other fields sit directly on the document object rather than under a nested wrapper.
+- `salary_slip` and `bank_statement` can each appear multiple times in `documents` (e.g. one `salary_slip` entry per month); their data is combined for validation — salary slips accumulate per month, bank statement transactions are merged across all `bank_statement` entries.
+- Dates (`date_of_birth`, `document_date`, `period.from`/`to`, `transaction_date`, etc.) accept `DD/MM/YYYY`, `DD.MM.YYYY`, or `DD-MM-YYYY`. Money fields (e.g. `net_salary.amount`) accept plain numbers or comma-formatted strings like `"75,000.00"`.
+- Bank statement transactions carry an unsigned `amount` plus a `direction` of `"Credited"` or `"Debited"`; debits are treated as negative internally.
+- Required document types for a case to proceed: `aadhaar`, `pan`, `salary_slip`, `bank_statement`. `address_proof` is optional (used as an address fallback).
 
 ### Response `200 OK`
 
@@ -141,7 +132,7 @@ Notes:
 
 | Status | When |
 |---|---|
-| `400 Bad Request` | The request body fails semantic parsing in `parse_case` (e.g. malformed/missing required fields inside `extracted_fields`). |
-| `422 Unprocessable Entity` | The request body fails schema validation (wrong types, missing `applicant_ref`/`documents`). |
+| `400 Bad Request` | The request body fails semantic parsing in `parse_case` (e.g. an unparseable date or amount). |
+| `422 Unprocessable Entity` | The request body fails schema validation (wrong types, missing `applicant_ref`/`documents`, or an unrecognized `document_type`). |
 
 If any of `AADHAAR`, `PAN`, `SALARY_SLIP`, `BANK_STATEMENT` is missing from `documents`, the pipeline still returns `200 OK` with `decision: "FAIL"` and reasons like `MISSING_DOCUMENT:PAN` — this is a business decision, not an HTTP error.

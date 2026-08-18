@@ -15,72 +15,95 @@ from pydantic import BaseModel, Field
 
 
 class BankTransactionIn(BaseModel):
-    narration: str | None = None
-    amount: float | None = None
-    date: str | None = None
+    transaction_date: str | None = None
+    description: str | None = None
+    amount: float | str | None = None
+    currency: str | None = None
+    direction: str | None = None
+    balance: float | str | None = None
 
 
-class AadhaarFieldsIn(BaseModel):
+class DocumentMetadataPeriodIn(BaseModel):
+    from_: str | None = Field(default=None, alias="from")
+    to: str | None = None
+
+    model_config = {"populate_by_name": True}
+
+
+class SalarySlipDocumentMetadataIn(BaseModel):
+    document_date: str | None = None
+    period: DocumentMetadataPeriodIn | None = None
+    currency: str | None = None
+
+
+class EmployerIn(BaseModel):
     name: str | None = None
-    address: str | None = None
-    aadhaar_number: str | None = None
-    date_of_birth: str | None = None
 
 
-class PanFieldsIn(BaseModel):
+class EmployeeIn(BaseModel):
+    employee_id: str | None = None
     name: str | None = None
-    pan_number: str | None = None
+    bank_account_number: str | None = None
+    date_of_joining: str | None = None
+    days_worked: int | None = None
+
+    model_config = {"extra": "allow"}
 
 
-class AddressProofFieldsIn(BaseModel):
-    address: str | None = None
-
-
-class SalarySlipFieldsIn(BaseModel):
-    name: str | None = None
-    employer_name: str | None = None
-    net_salary: float | str | None = None
-    salary_month: str | None = None
-
-
-class BankStatementFieldsIn(BaseModel):
-    name: str | None = None
-    transactions: list[BankTransactionIn] = Field(default_factory=list)
-
-
-class SalarySlipIn(BaseModel):
-    extracted_fields: SalarySlipFieldsIn
-    source_file_ref: str | None = None
+class NetSalaryIn(BaseModel):
+    amount: float | str | None = None
+    currency: str | None = None
+    amount_in_words: str | None = None
 
 
 class AadhaarDocumentIn(BaseModel):
-    doc_type: Literal["AADHAAR"]
-    extracted_fields: AadhaarFieldsIn
-    source_file_ref: str | None = None
+    document_type: Literal["aadhaar"]
+    name: str | None = None
+    date_of_birth: str | None = None
+    aadhaar_number: str | None = None
+    address: str | None = None
 
 
 class PanDocumentIn(BaseModel):
-    doc_type: Literal["PAN"]
-    extracted_fields: PanFieldsIn
-    source_file_ref: str | None = None
+    document_type: Literal["pan"]
+    name: str | None = None
+    date_of_birth: str | None = None
+    pan_number: str | None = None
 
 
 class AddressProofDocumentIn(BaseModel):
-    doc_type: Literal["ADDRESS_PROOF"]
-    extracted_fields: AddressProofFieldsIn
-    source_file_ref: str | None = None
+    document_type: Literal["address_proof"]
+    address: str | None = None
 
 
 class SalarySlipDocumentIn(BaseModel):
-    doc_type: Literal["SALARY_SLIP"]
-    salary_slips: list[SalarySlipIn]
-    source_file_ref: str | None = None
+    document_type: Literal["salary_slip"]
+    document_metadata: SalarySlipDocumentMetadataIn | None = None
+    employer: EmployerIn | None = None
+    employee: EmployeeIn | None = None
+    net_salary: NetSalaryIn | None = None
+
+
+class BankStatementDocumentMetadataIn(BaseModel):
+    statement_period: DocumentMetadataPeriodIn | None = None
+    currency: str | None = None
+
+
+class BankAccountIn(BaseModel):
+    account_number: str | None = None
+    customer_id: str | None = None
+    account_holder_name: str | None = None
+    account_type: str | None = None
+    bank_name: str | None = None
+    branch_name: str | None = None
+    lien_amount: float | str | None = None
 
 
 class BankStatementDocumentIn(BaseModel):
-    doc_type: Literal["BANK_STATEMENT"]
-    extracted_fields: BankStatementFieldsIn
-    source_file_ref: str | None = None
+    document_type: Literal["bank_statement"]
+    document_metadata: BankStatementDocumentMetadataIn | None = None
+    account: BankAccountIn | None = None
+    transactions: list[BankTransactionIn] = Field(default_factory=list)
 
 
 DocumentIn = Annotated[
@@ -91,7 +114,7 @@ DocumentIn = Annotated[
         SalarySlipDocumentIn,
         BankStatementDocumentIn,
     ],
-    Field(discriminator="doc_type"),
+    Field(discriminator="document_type"),
 ]
 
 
