@@ -1,12 +1,12 @@
 """Request/response schemas for POST /cases.
 
 Mirrors the JSON shape documented in docs/Workflow.md and used by
-scripts/sample_case.json — one applicant_ref plus a flat list of documents.
+scripts/sample_case.json — a flat list of documents. applicant_ref is not
+part of the request; it is generated server-side in case_parsing.py.
 
-`DocumentIn` is a discriminated union keyed on doc_type: each document kind
-gets its own extracted-fields shape, and only SALARY_SLIP carries
-salary_slips (and no top-level extracted_fields, matching the documented
-sample).
+`DocumentIn` is a discriminated union keyed on document_type: each document
+kind gets its own fields, matching the field-mapping service's per-document
+output shape directly (no extracted_fields/source_file_ref wrapper).
 """
 
 from typing import Annotated, Any, Literal, Union
@@ -56,6 +56,31 @@ class NetSalaryIn(BaseModel):
     amount_in_words: str | None = None
 
 
+class EarningsIn(BaseModel):
+    basic_per_month: float | str | None = None
+    gross_per_month: float | str | None = None
+    allowances_per_month: float | str | None = None
+    other: float | str | None = None
+
+    model_config = {"extra": "allow"}
+
+
+class DeductionsIn(BaseModel):
+    total: float | str | None = None
+    tax: float | str | None = None
+    retirement_contribution: float | str | None = None
+    other: float | str | None = None
+
+    model_config = {"extra": "allow"}
+
+
+class BankStatementSummaryIn(BaseModel):
+    total_credits: float | str | None = None
+    total_debits: float | str | None = None
+    opening_balance: float | str | None = None
+    closing_balance: float | str | None = None
+
+
 class AadhaarDocumentIn(BaseModel):
     document_type: Literal["aadhaar"]
     name: str | None = None
@@ -81,6 +106,8 @@ class SalarySlipDocumentIn(BaseModel):
     document_metadata: SalarySlipDocumentMetadataIn | None = None
     employer: EmployerIn | None = None
     employee: EmployeeIn | None = None
+    earnings: EarningsIn | None = None
+    deductions: DeductionsIn | None = None
     net_salary: NetSalaryIn | None = None
 
 
@@ -104,6 +131,7 @@ class BankStatementDocumentIn(BaseModel):
     document_metadata: BankStatementDocumentMetadataIn | None = None
     account: BankAccountIn | None = None
     transactions: list[BankTransactionIn] = Field(default_factory=list)
+    summary: BankStatementSummaryIn | None = None
 
 
 DocumentIn = Annotated[
@@ -119,7 +147,6 @@ DocumentIn = Annotated[
 
 
 class CaseCreateRequest(BaseModel):
-    applicant_ref: str
     documents: list[DocumentIn]
 
 
@@ -129,6 +156,10 @@ class ValidationResultOut(BaseModel):
     score: float
     document_id: str | None = None
     evidence: dict[str, Any] | None = None
+    # Only set for SALARY_DATE checks that matched a bank credit: the amount
+    # of that matched transaction, i.e. the salary amount as validated
+    # against the bank statement (see evidence.matched_transaction).
+    matched_salary_amount: float | None = None
 
 
 class CaseCreateResponse(BaseModel):

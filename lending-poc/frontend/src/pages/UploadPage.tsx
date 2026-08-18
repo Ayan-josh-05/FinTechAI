@@ -66,7 +66,7 @@ export default function UploadPage() {
     setUploadedDocuments(uploadedDocuments.filter((d) => d.docType !== docType))
   }
 
-  const allUploaded = DOCUMENT_TYPE_CONFIG.every((c) => documentsByType[c.docType])
+  const hasAnyUpload = uploadedDocuments.length > 0
 
   const handleProceed = () => {
     // Fresh run: clear any stale downstream results from a previous session,
@@ -100,7 +100,7 @@ export default function UploadPage() {
       <div>
         <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Upload Documents</h2>
         <p className="mt-1.5 text-sm text-slate-600">
-          Upload all four required documents to begin verification. Nothing is sent to the server
+          Upload any of the documents below to begin verification. Nothing is sent to the server
           until you click Start Verification.
         </p>
       </div>
@@ -143,7 +143,7 @@ export default function UploadPage() {
 
       <div className="flex items-center justify-between border-t border-slate-200 pt-6">
         <UploadSummary documents={documentsByType} />
-        <Button type="button" disabled={!allUploaded} onClick={handleProceed}>
+        <Button type="button" disabled={!hasAnyUpload} onClick={handleProceed}>
           Start Verification →
         </Button>
       </div>

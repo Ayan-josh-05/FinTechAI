@@ -35,7 +35,13 @@ export function useOCR() {
       setIsRunning(true)
       docs.forEach((doc) => setOcrEntry(doc.id, { status: 'processing' }))
 
-      await Promise.allSettled(docs.map((doc) => extractDoc(doc)))
+      // The OCR backend serializes extraction (the underlying Surya engine
+      // segfaults if invoked concurrently), so firing all requests at once
+      // just piles them up behind a lock until their connections time out.
+      // Send them one at a time instead.
+      for (const doc of docs) {
+        await extractDoc(doc)
+      }
 
       setIsRunning(false)
     },

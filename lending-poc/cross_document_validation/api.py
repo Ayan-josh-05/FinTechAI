@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from cross_document_validation.schemas.case import CaseCreateRequest, CaseCreateResponse, ValidationResultOut
 from cross_document_validation.services.case_parsing import parse_case
+from cross_document_validation.services.dto import CheckType
 from cross_document_validation.services.persistence import save_pipeline_result
 from cross_document_validation.services.pipeline import run_pipeline
 from cross_document_validation.utils.json_safe import json_safe
@@ -35,6 +36,13 @@ async def create_case(
                 score=r.score,
                 document_id=r.document_id,
                 evidence=json_safe(r.evidence) if r.evidence else None,
+                matched_salary_amount=(
+                    r.evidence["matched_transaction"].amount
+                    if r.check_type == CheckType.SALARY_DATE
+                    and r.evidence
+                    and "matched_transaction" in r.evidence
+                    else None
+                ),
             )
             for r in pipeline_result.validation_results
         ],

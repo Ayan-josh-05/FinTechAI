@@ -1,77 +1,128 @@
 import { z } from 'zod'
 
-// --- Request schema (mirrors app/schemas/case.py CaseCreateRequest) ---
+// --- Request schema (mirrors cross_document_validation/schemas/case.py CaseCreateRequest) ---
+// Documents sit flat on the object (no extracted_fields/source_file_ref wrapper),
+// matching the field-mapping service's own per-document output shape.
 
 export const bankTransactionInSchema = z.object({
-  narration: z.string().nullable().optional(),
-  amount: z.number().nullable().optional(),
-  date: z.string().nullable().optional(),
+  transaction_date: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  amount: z.union([z.number(), z.string()]).nullable().optional(),
+  currency: z.string().nullable().optional(),
+  direction: z.string().nullable().optional(),
+  balance: z.union([z.number(), z.string()]).nullable().optional(),
 })
 
-export const aadhaarFieldsInSchema = z.object({
+export const documentMetadataPeriodInSchema = z.object({
+  from: z.string().nullable().optional(),
+  to: z.string().nullable().optional(),
+})
+
+export const salarySlipDocumentMetadataInSchema = z.object({
+  document_date: z.string().nullable().optional(),
+  period: documentMetadataPeriodInSchema.nullable().optional(),
+  currency: z.string().nullable().optional(),
+})
+
+export const employerInSchema = z.object({
   name: z.string().nullable().optional(),
-  address: z.string().nullable().optional(),
-  aadhaar_number: z.string().nullable().optional(),
-  date_of_birth: z.string().nullable().optional(),
 })
 
-export const panFieldsInSchema = z.object({
-  name: z.string().nullable().optional(),
-  pan_number: z.string().nullable().optional(),
-})
+export const employeeInSchema = z
+  .object({
+    employee_id: z.string().nullable().optional(),
+    name: z.string().nullable().optional(),
+    bank_account_number: z.string().nullable().optional(),
+    date_of_joining: z.string().nullable().optional(),
+    days_worked: z.number().nullable().optional(),
+  })
+  .catchall(z.unknown())
 
-export const addressProofFieldsInSchema = z.object({
-  address: z.string().nullable().optional(),
-})
+export const earningsInSchema = z
+  .object({
+    basic_per_month: z.union([z.number(), z.string()]).nullable().optional(),
+    gross_per_month: z.union([z.number(), z.string()]).nullable().optional(),
+    allowances_per_month: z.union([z.number(), z.string()]).nullable().optional(),
+    other: z.union([z.number(), z.string()]).nullable().optional(),
+  })
+  .catchall(z.unknown())
 
-export const salarySlipFieldsInSchema = z.object({
-  name: z.string().nullable().optional(),
-  employer_name: z.string().nullable().optional(),
-  net_salary: z.union([z.number(), z.string()]).nullable().optional(),
-  salary_month: z.string().nullable().optional(),
-})
+export const deductionsInSchema = z
+  .object({
+    total: z.union([z.number(), z.string()]).nullable().optional(),
+    tax: z.union([z.number(), z.string()]).nullable().optional(),
+    retirement_contribution: z.union([z.number(), z.string()]).nullable().optional(),
+    other: z.union([z.number(), z.string()]).nullable().optional(),
+  })
+  .catchall(z.unknown())
 
-export const bankStatementFieldsInSchema = z.object({
-  name: z.string().nullable().optional(),
-  transactions: z.array(bankTransactionInSchema).default([]),
-})
-
-export const salarySlipInSchema = z.object({
-  extracted_fields: salarySlipFieldsInSchema,
-  source_file_ref: z.string().nullable().optional(),
+export const netSalaryInSchema = z.object({
+  amount: z.union([z.number(), z.string()]).nullable().optional(),
+  currency: z.string().nullable().optional(),
+  amount_in_words: z.string().nullable().optional(),
 })
 
 export const aadhaarDocumentInSchema = z.object({
-  doc_type: z.literal('AADHAAR'),
-  extracted_fields: aadhaarFieldsInSchema,
-  source_file_ref: z.string().nullable().optional(),
+  document_type: z.literal('aadhaar'),
+  name: z.string().nullable().optional(),
+  date_of_birth: z.string().nullable().optional(),
+  aadhaar_number: z.string().nullable().optional(),
+  address: z.string().nullable().optional(),
 })
 
 export const panDocumentInSchema = z.object({
-  doc_type: z.literal('PAN'),
-  extracted_fields: panFieldsInSchema,
-  source_file_ref: z.string().nullable().optional(),
+  document_type: z.literal('pan'),
+  name: z.string().nullable().optional(),
+  date_of_birth: z.string().nullable().optional(),
+  pan_number: z.string().nullable().optional(),
 })
 
 export const addressProofDocumentInSchema = z.object({
-  doc_type: z.literal('ADDRESS_PROOF'),
-  extracted_fields: addressProofFieldsInSchema,
-  source_file_ref: z.string().nullable().optional(),
+  document_type: z.literal('address_proof'),
+  address: z.string().nullable().optional(),
 })
 
 export const salarySlipDocumentInSchema = z.object({
-  doc_type: z.literal('SALARY_SLIP'),
-  salary_slips: z.array(salarySlipInSchema),
-  source_file_ref: z.string().nullable().optional(),
+  document_type: z.literal('salary_slip'),
+  document_metadata: salarySlipDocumentMetadataInSchema.nullable().optional(),
+  employer: employerInSchema.nullable().optional(),
+  employee: employeeInSchema.nullable().optional(),
+  earnings: earningsInSchema.nullable().optional(),
+  deductions: deductionsInSchema.nullable().optional(),
+  net_salary: netSalaryInSchema.nullable().optional(),
+})
+
+export const bankStatementDocumentMetadataInSchema = z.object({
+  statement_period: documentMetadataPeriodInSchema.nullable().optional(),
+  currency: z.string().nullable().optional(),
+})
+
+export const bankAccountInSchema = z.object({
+  account_number: z.string().nullable().optional(),
+  customer_id: z.string().nullable().optional(),
+  account_holder_name: z.string().nullable().optional(),
+  account_type: z.string().nullable().optional(),
+  bank_name: z.string().nullable().optional(),
+  branch_name: z.string().nullable().optional(),
+  lien_amount: z.union([z.number(), z.string()]).nullable().optional(),
+})
+
+export const bankStatementSummaryInSchema = z.object({
+  total_credits: z.union([z.number(), z.string()]).nullable().optional(),
+  total_debits: z.union([z.number(), z.string()]).nullable().optional(),
+  opening_balance: z.union([z.number(), z.string()]).nullable().optional(),
+  closing_balance: z.union([z.number(), z.string()]).nullable().optional(),
 })
 
 export const bankStatementDocumentInSchema = z.object({
-  doc_type: z.literal('BANK_STATEMENT'),
-  extracted_fields: bankStatementFieldsInSchema,
-  source_file_ref: z.string().nullable().optional(),
+  document_type: z.literal('bank_statement'),
+  document_metadata: bankStatementDocumentMetadataInSchema.nullable().optional(),
+  account: bankAccountInSchema.nullable().optional(),
+  transactions: z.array(bankTransactionInSchema).default([]),
+  summary: bankStatementSummaryInSchema.nullable().optional(),
 })
 
-export const documentInSchema = z.discriminatedUnion('doc_type', [
+export const documentInSchema = z.discriminatedUnion('document_type', [
   aadhaarDocumentInSchema,
   panDocumentInSchema,
   addressProofDocumentInSchema,
@@ -80,7 +131,6 @@ export const documentInSchema = z.discriminatedUnion('doc_type', [
 ])
 
 export const caseCreateRequestSchema = z.object({
-  applicant_ref: z.string(),
   documents: z.array(documentInSchema),
 })
 
@@ -102,6 +152,9 @@ export const validationResultOutSchema = z.object({
   document_id: z.string().nullable().optional(),
   // evidence is dynamic/open-ended — shape varies by check_type.
   evidence: z.record(z.string(), z.unknown()).nullable().optional(),
+  // Only set for SALARY_DATE checks that matched a bank credit: the salary
+  // amount as validated against the bank statement.
+  matched_salary_amount: z.number().nullable().optional(),
 })
 
 export const caseCreateResponseSchema = z.object({

@@ -67,7 +67,7 @@ def get_kb_path(domain: str) -> Path:
 MODEL_ADAPTER = "ollama"
 
 # Model identifier passed to the chosen adapter.
-MODEL_NAME = "gemma4:e4b"
+MODEL_NAME = "qwen3.5:4b"
 
 # ---------------------------------------------------------------------------
 # Model options  (adapter-specific — passed through as-is)

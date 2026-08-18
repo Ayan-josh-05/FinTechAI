@@ -23,7 +23,7 @@ export function UploadSummary({ documents }: UploadSummaryProps) {
         />
       </div>
       <p className="text-sm font-medium text-slate-600">
-        {uploadedCount} of {total} required documents uploaded
+        {uploadedCount} of {total} documents uploaded (optional)
       </p>
     </div>
   )

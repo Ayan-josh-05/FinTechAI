@@ -1,8 +1,11 @@
 """Parses the raw request JSON shape (see docs/Workflow.md) into CaseInput.
 
-Used by the POST /cases endpoint.
+Used by the POST /cases endpoint. applicant_ref is not part of the request
+body — it is generated here since nothing upstream collects a real
+applicant identifier yet.
 """
 
+import random
 from datetime import date, datetime
 
 from cross_document_validation.services.dto import (
@@ -14,6 +17,10 @@ from cross_document_validation.services.dto import (
     PanDoc,
     SalarySlipDoc,
 )
+
+
+def _generate_applicant_ref() -> str:
+    return f"APP-{datetime.now().year}-{random.randint(0, 99999):05d}"
 
 
 def _get(fields: dict, key: str) -> str | None:
@@ -51,7 +58,7 @@ def _parse_float(value) -> float | None:
 
 
 def parse_case(payload: dict) -> CaseInput:
-    case = CaseInput(applicant_ref=payload["applicant_ref"])
+    case = CaseInput(applicant_ref=_generate_applicant_ref())
     salary_slip_index = 0
 
     for doc in payload["documents"]:

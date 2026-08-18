@@ -54,6 +54,14 @@ export function ValidationRow({ result }: ValidationRowProps) {
                 <span className="font-medium text-slate-800">Document:</span>{' '}
                 {result.document_id ?? '—'}
               </span>
+              {result.matched_salary_amount != null && (
+                <span>
+                  <span className="font-medium text-slate-800">
+                    Salary Amount (per Bank Statement):
+                  </span>{' '}
+                  {result.matched_salary_amount.toLocaleString()}
+                </span>
+              )}
             </div>
             <JsonViewer data={evidence ?? {}} />
           </td>

@@ -11,7 +11,7 @@ interface DocumentUploadCardProps {
 }
 
 /**
- * A single required-document slot: shows either the dropzone or the
+ * A single optional-document slot: shows either the dropzone or the
  * uploaded file's metadata card, depending on whether a file is present.
  */
 export function DocumentUploadCard({
@@ -23,9 +23,7 @@ export function DocumentUploadCard({
 }: DocumentUploadCardProps) {
   return (
     <div>
-      <p className="mb-2 text-sm font-semibold text-slate-800">
-        {label} <span className="text-red-500">*</span>
-      </p>
+      <p className="mb-2 text-sm font-semibold text-slate-800">{label}</p>
       {document ? (
         <UploadedFileCard
           fileName={document.fileName}
