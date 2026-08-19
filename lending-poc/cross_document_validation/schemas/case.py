@@ -156,10 +156,10 @@ class ValidationResultOut(BaseModel):
     score: float
     document_id: str | None = None
     evidence: dict[str, Any] | None = None
-    # Only set for SALARY_DATE checks that matched a bank credit: the amount
-    # of that matched transaction, i.e. the salary amount as validated
-    # against the bank statement (see evidence.matched_transaction).
-    matched_salary_amount: float | None = None
+    # Only set for SALARY_CREDIT_COUNT: the amounts of every matched salary
+    # credit (one per passing SALARY_DATE check), i.e. the salary amounts as
+    # validated against the bank statement.
+    matched_salary_amount: list[float] | None = None
 
 
 class CaseCreateResponse(BaseModel):

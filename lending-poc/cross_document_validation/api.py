@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -12,10 +13,8 @@ from cross_document_validation.utils.json_safe import json_safe
 router = APIRouter(tags=["cases"])
 
 
-@router.post("/cases", response_model=CaseCreateResponse)
-async def create_case(
-    request: CaseCreateRequest, db: AsyncSession = Depends(get_db)
-) -> CaseCreateResponse:
+@router.post("/cases", response_model=None)
+async def create_case(request: CaseCreateRequest, db: AsyncSession = Depends(get_db)) -> JSONResponse:
     try:
         case_input = parse_case(request.model_dump())
     except ValueError as exc:
@@ -23,7 +22,13 @@ async def create_case(
     pipeline_result = run_pipeline(case_input)
     case = await save_pipeline_result(db, case_input, pipeline_result)
 
-    return CaseCreateResponse(
+    matched_salary_amounts = [
+        r.evidence["matched_transaction"].amount
+        for r in pipeline_result.validation_results
+        if r.check_type == CheckType.SALARY_DATE and r.evidence and "matched_transaction" in r.evidence
+    ]
+
+    response = CaseCreateResponse(
         case_id=str(case.id),
         applicant_ref=case_input.applicant_ref,
         decision=pipeline_result.decision_result.decision.value,
@@ -37,13 +42,16 @@ async def create_case(
                 document_id=r.document_id,
                 evidence=json_safe(r.evidence) if r.evidence else None,
                 matched_salary_amount=(
-                    r.evidence["matched_transaction"].amount
-                    if r.check_type == CheckType.SALARY_DATE
-                    and r.evidence
-                    and "matched_transaction" in r.evidence
-                    else None
+                    matched_salary_amounts if r.check_type == CheckType.SALARY_CREDIT_COUNT else None
                 ),
             )
             for r in pipeline_result.validation_results
         ],
     )
+
+    payload = response.model_dump(mode="json")
+    for result in payload["validation_results"]:
+        if result["check_type"] != CheckType.SALARY_CREDIT_COUNT.value:
+            result.pop("matched_salary_amount", None)
+
+    return JSONResponse(content=payload)
