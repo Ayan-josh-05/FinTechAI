@@ -200,6 +200,10 @@ make status            # Show project status
 ### Prerequisites
 - Python 3.11+
 - macOS/Linux (Surya requires local inference backend)
+- A Surya inference backend: on CPU-only WSL install `llama.cpp` so that
+  `llama-server` is on `PATH`; on an NVIDIA WSL setup configure Surya's vLLM
+  backend and Docker/GPU passthrough. The API now verifies this at startup,
+  before reporting `/health` as healthy.
 
 ### Dependencies
 
