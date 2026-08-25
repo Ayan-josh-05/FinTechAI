@@ -23,10 +23,6 @@ from fastapi.responses import JSONResponse, Response
 OCR_BASE_URL = os.environ.get("OCR_BASE_URL", "http://127.0.0.1:8010")
 TRANSLATION_BASE_URL = os.environ.get("TRANSLATION_BASE_URL", "http://127.0.0.1:8001")
 FIELD_MAPPING_BASE_URL = os.environ.get("FIELD_MAPPING_BASE_URL", "http://127.0.0.1:8002")
-# Surya on a CPU-only WSL host can take several minutes per handwritten page.
-# Keep this aligned with the browser timeout so the gateway does not terminate
-# a valid OCR request while the OCR worker is still generating text.
-OCR_REQUEST_TIMEOUT_SECONDS = float(os.environ.get("OCR_REQUEST_TIMEOUT_SECONDS", "1800"))
 
 # Headers that must not be forwarded as-is between hops (RFC 7230) plus a few
 # that httpx/Starlette will recompute themselves and that would otherwise
@@ -41,7 +37,7 @@ RESPONSE_STRIP_HEADERS = HOP_BY_HOP_HEADERS | {"content-length", "content-encodi
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.http = httpx.AsyncClient(timeout=httpx.Timeout(30.0))
+    app.state.http = httpx.AsyncClient(timeout=120.0)
     yield
     await app.state.http.aclose()
 
@@ -62,14 +58,12 @@ async def _proxy(request: Request, base_url: str, path: str) -> Response:
     headers = {k: v for k, v in request.headers.items() if k.lower() not in REQUEST_STRIP_HEADERS}
     body = await request.body()
     try:
-        timeout = OCR_REQUEST_TIMEOUT_SECONDS if base_url == OCR_BASE_URL else None
         upstream = await client.request(
             request.method,
             f"{base_url}{path}",
             headers=headers,
             params=list(request.query_params.multi_items()),
             content=body,
-            timeout=timeout,
         )
     except httpx.RequestError as exc:
         return JSONResponse(
