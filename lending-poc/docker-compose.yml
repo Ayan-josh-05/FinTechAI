@@ -32,5 +32,92 @@ services:
       db:
         condition: service_healthy
 
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+
+  field_mapping:
+    build: ./field_mapping_poc
+    command: uvicorn api:app --host 0.0.0.0 --port 8002 --reload
+    ports:
+      - "8002:8002"
+    environment:
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma4:e4b-it-qat}
+    volumes:
+      - ./field_mapping_poc:/app
+    depends_on:
+      - ollama
+
+  translation:
+    build: ./document_processing/translation
+    command: uvicorn api_server:app --host 0.0.0.0 --port 8001 --reload
+    ports:
+      - "8001:8001"
+    environment:
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma4:e4b-it-qat}
+    volumes:
+      - ./document_processing/translation:/app
+    depends_on:
+      - ollama
+
+  surya-inference:
+    build: ./surya-inference
+    ports:
+      - "8500:8000"
+    environment:
+      SURYA_INFERENCE_PARALLEL: ${SURYA_INFERENCE_PARALLEL:-4}
+      SURYA_INFERENCE_CTX_SIZE: ${SURYA_INFERENCE_CTX_SIZE:-49152}
+    volumes:
+      - surya_models:/models
+
+  ocr:
+    build: ./document_processing/ocr
+    command: uvicorn api:app --host 0.0.0.0 --port 8010 --reload
+    ports:
+      - "8010:8010"
+    environment:
+      SURYA_INFERENCE_URL: http://surya-inference:8000/v1
+      SURYA_INFERENCE_AUTOSTART: "false"
+    volumes:
+      - ./document_processing/ocr:/app
+    depends_on:
+      - surya-inference
+
+  gateway:
+    build: ./gateway
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8080:8000"
+    environment:
+      FIELD_MAPPING_BASE_URL: http://field_mapping:8002
+      OCR_BASE_URL: http://ocr:8010
+      TRANSLATION_BASE_URL: http://translation:8001
+    volumes:
+      - ./gateway:/app
+    depends_on:
+      - field_mapping
+      - ocr
+      - translation
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      # Browser-facing: must be host-reachable (localhost + published port),
+      # not a Docker-internal service name.
+      VITE_API_BASE_URL: http://localhost:8080
+      VITE_TRANSLATION_API_BASE_URL: http://localhost:8080
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
 volumes:
   pgdata:
+  ollama_models:
+  surya_models:
