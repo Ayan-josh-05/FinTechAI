@@ -1,8 +1,21 @@
-# Builds llama.cpp's CPU `llama-server` from source and serves it standalone,
-# so ocr-api can point SURYA_INFERENCE_URL here instead of spawning its own
-# copy in-process (see surya/inference/backends/llamacpp.py in the ocr-api
-# image for the equivalent in-process spawn logic this mirrors).
-FROM python:3.12-slim AS build
+# Builds llama.cpp's `llama-server` from source and serves it standalone, so
+# ocr-api can point SURYA_INFERENCE_URL here instead of spawning its own copy
+# in-process (see surya/inference/backends/llamacpp.py in the ocr-api image
+# for the equivalent in-process spawn logic this mirrors).
+#
+# CPU by default. For a CUDA-capable build (paired with the "gpu" compose
+# profile), pass:
+#   --build-arg BASE_IMAGE=nvidia/cuda:12.4.1-devel-ubuntu22.04
+#   --build-arg RUNTIME_IMAGE=nvidia/cuda:12.4.1-runtime-ubuntu22.04
+#   --build-arg GGML_CUDA=ON
+# entrypoint.sh still probes for a visible GPU at container start and falls
+# back to -ngl 0 (CPU) if none is found, so this image works either way.
+ARG BASE_IMAGE=python:3.12-slim
+ARG RUNTIME_IMAGE=python:3.12-slim
+
+FROM ${BASE_IMAGE} AS build
+
+ARG GGML_CUDA=OFF
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential cmake git ca-certificates \
@@ -10,10 +23,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp /llama.cpp
 WORKDIR /llama.cpp
-RUN cmake -B build -DGGML_NATIVE=OFF -DLLAMA_CURL=OFF -DCMAKE_BUILD_TYPE=Release \
+RUN cmake -B build -DGGML_NATIVE=OFF -DGGML_CUDA=${GGML_CUDA} -DLLAMA_CURL=OFF -DCMAKE_BUILD_TYPE=Release \
     && cmake --build build -j"$(nproc)" --target llama-server
 
-FROM python:3.12-slim
+FROM ${RUNTIME_IMAGE}
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl ca-certificates libgomp1 \

@@ -32,8 +32,14 @@ services:
       db:
         condition: service_healthy
 
+  # Ollama's own image already auto-detects CUDA at runtime and falls back
+  # to CPU on its own — no custom build needed here, just the same cpu/gpu
+  # profile split used for surya-inference/ocr below, so GPU access is only
+  # requested when COMPOSE_PROFILES=gpu.
   ollama:
+    &ollama
     image: ollama/ollama:latest
+    profiles: ["cpu"]
     ports:
       - "11434:11434"
     environment:
@@ -44,6 +50,21 @@ services:
       OLLAMA_KEEP_ALIVE: -1
     volumes:
       - ollama_models:/root/.ollama
+
+  ollama-gpu:
+    <<: *ollama
+    profiles: ["gpu"]
+    networks:
+      default:
+        aliases:
+          - ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   field_mapping:
     build: ./field_mapping_poc
@@ -59,7 +80,12 @@ services:
     volumes:
       - ./field_mapping_poc:/app
     depends_on:
-      - ollama
+      ollama:
+        condition: service_started
+        required: false
+      ollama-gpu:
+        condition: service_started
+        required: false
 
   translation:
     build: ./document_processing/translation
@@ -72,10 +98,23 @@ services:
     volumes:
       - ./document_processing/translation:/app
     depends_on:
-      - ollama
+      ollama:
+        condition: service_started
+        required: false
+      ollama-gpu:
+        condition: service_started
+        required: false
 
+  # surya-inference and ocr each come in a "cpu" and "gpu" variant, selected
+  # via COMPOSE_PROFILES in .env (defaults to "cpu" so plain `docker compose
+  # up` always works). Both variants of a pair share a network alias so
+  # downstream services (SURYA_INFERENCE_URL, OCR_BASE_URL) don't need to
+  # know which one is active. See document_processing/ocr/README.md for GPU
+  # prerequisites (NVIDIA Container Toolkit / WSL GPU passthrough).
   surya-inference:
+    &surya-inference
     build: ./surya-inference
+    profiles: ["cpu"]
     ports:
       - "8500:8000"
     environment:
@@ -84,8 +123,31 @@ services:
     volumes:
       - surya_models:/models
 
+  surya-inference-gpu:
+    <<: *surya-inference
+    profiles: ["gpu"]
+    build:
+      context: ./surya-inference
+      args:
+        BASE_IMAGE: nvidia/cuda:12.4.1-devel-ubuntu22.04
+        RUNTIME_IMAGE: nvidia/cuda:12.4.1-runtime-ubuntu22.04
+        GGML_CUDA: "ON"
+    networks:
+      default:
+        aliases:
+          - surya-inference
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
   ocr:
+    &ocr
     build: ./document_processing/ocr
+    profiles: ["cpu"]
     command: uvicorn api:app --host 0.0.0.0 --port 8010 --reload
     ports:
       - "8010:8010"
@@ -95,7 +157,31 @@ services:
     volumes:
       - ./document_processing/ocr:/app
     depends_on:
-      - surya-inference
+      surya-inference:
+        condition: service_started
+        required: false
+      surya-inference-gpu:
+        condition: service_started
+        required: false
+
+  ocr-gpu:
+    <<: *ocr
+    profiles: ["gpu"]
+    build:
+      context: ./document_processing/ocr
+      args:
+        GPU: "1"
+    networks:
+      default:
+        aliases:
+          - ocr
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   gateway:
     build: ./gateway
@@ -109,9 +195,16 @@ services:
     volumes:
       - ./gateway:/app
     depends_on:
-      - field_mapping
-      - ocr
-      - translation
+      field_mapping:
+        condition: service_started
+      ocr:
+        condition: service_started
+        required: false
+      ocr-gpu:
+        condition: service_started
+        required: false
+      translation:
+        condition: service_started
 
   frontend:
     build: ./frontend
