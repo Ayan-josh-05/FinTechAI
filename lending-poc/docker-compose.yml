@@ -36,6 +36,12 @@ services:
     image: ollama/ollama:latest
     ports:
       - "11434:11434"
+    environment:
+      # Keep the model resident once loaded instead of unloading after the
+      # default 5m idle timeout — cold-loading this model takes 2+ minutes,
+      # which otherwise blows past callers' request timeouts on every call
+      # after a short idle gap.
+      OLLAMA_KEEP_ALIVE: -1
     volumes:
       - ollama_models:/root/.ollama
 
@@ -47,6 +53,9 @@ services:
     environment:
       OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma4:e4b-it-qat}
+      # Cold model load alone can take 2+ minutes; give the first call after
+      # an idle gap enough headroom instead of timing out mid-load.
+      OLLAMA_TIMEOUT_SECONDS: ${OLLAMA_TIMEOUT_SECONDS:-300}
     volumes:
       - ./field_mapping_poc:/app
     depends_on:
