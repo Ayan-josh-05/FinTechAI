@@ -15,7 +15,7 @@ WORKDIR /app
 # grants) and a host NVIDIA driver.
 ARG GPU=0
 RUN if [ "$GPU" = "0" ]; then \
-      pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu; \
+      pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu; \
     fi
 
 COPY requirements.txt .
